@@ -68,7 +68,8 @@ $$;
 CREATE OR REPLACE FUNCTION lookup_ballot(
     p_lat           numeric,
     p_lng           numeric,
-    p_election_type text DEFAULT NULL
+    p_election_type text DEFAULT NULL,
+    p_voter_party   text DEFAULT NULL
 )
 RETURNS TABLE(
     contest_slug    text,
@@ -89,24 +90,61 @@ AS $$
             p.geometry
         )
         LIMIT 1
+    ),
+    contest_base AS (
+        SELECT
+            c.id,
+            c.slug,
+            c.election_type,
+            c.election_date,
+            o.name AS office_name,
+            c.district_name
+        FROM matched_precinct mp
+        JOIN precinct_contests pc ON pc.precinct_id = mp.precinct_id
+        JOIN contests c           ON c.id = pc.contest_id
+        JOIN offices o            ON o.id = c.office_id
+        WHERE c.election_date >= CURRENT_DATE
+          AND (p_election_type IS NULL OR c.election_type = p_election_type)
+    ),
+    candidate_stats AS (
+        SELECT
+            cb.id AS contest_id,
+            COUNT(cand.id) AS total_candidate_count,
+            COUNT(cand.id) FILTER (
+                WHERE NULLIF(TRIM(cand.party), '') IS NOT NULL
+                  AND LOWER(TRIM(cand.party)) <> 'nonpartisan'
+            ) AS partisan_candidate_count,
+            COUNT(cand.id) FILTER (
+                WHERE p_voter_party IS NOT NULL
+                  AND NULLIF(TRIM(cand.party), '') IS NOT NULL
+                  AND LOWER(TRIM(cand.party)) = LOWER(TRIM(p_voter_party))
+            ) AS selected_party_candidate_count
+        FROM contest_base cb
+        LEFT JOIN candidates cand ON cand.contest_id = cb.id
+                                 AND cand.filing_status = 'Active'
+        GROUP BY cb.id
     )
     SELECT
-        c.slug          AS contest_slug,
-        c.election_type,
-        c.election_date,
-        o.name          AS office_name,
-        c.district_name,
-        COUNT(cand.id)  AS candidate_count
-    FROM matched_precinct mp
-    JOIN precinct_contests pc ON pc.precinct_id = mp.precinct_id
-    JOIN contests c           ON c.id = pc.contest_id
-    JOIN offices o            ON o.id = c.office_id
-    LEFT JOIN candidates cand ON cand.contest_id = c.id
-                              AND cand.filing_status = 'Active'
-    WHERE c.election_date >= CURRENT_DATE
-      AND (p_election_type IS NULL OR c.election_type = p_election_type)
-    GROUP BY c.slug, c.election_type, c.election_date, o.name, c.district_name
-    ORDER BY c.election_date, o.name;
+        cb.slug AS contest_slug,
+        cb.election_type,
+        cb.election_date,
+        cb.office_name,
+        cb.district_name,
+        CASE
+            WHEN cb.election_type = 'primary'
+             AND p_voter_party IS NOT NULL
+             AND COALESCE(cs.partisan_candidate_count, 0) > 0
+            THEN COALESCE(cs.selected_party_candidate_count, 0)
+            ELSE COALESCE(cs.total_candidate_count, 0)
+        END AS candidate_count
+    FROM contest_base cb
+    LEFT JOIN candidate_stats cs ON cs.contest_id = cb.id
+    WHERE
+        cb.election_type <> 'primary'
+        OR p_voter_party IS NULL
+        OR COALESCE(cs.partisan_candidate_count, 0) = 0
+        OR COALESCE(cs.selected_party_candidate_count, 0) > 0
+    ORDER BY cb.election_date, cb.office_name;
 $$;
 
 -- ============================================================

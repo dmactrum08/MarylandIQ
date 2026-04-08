@@ -1,6 +1,6 @@
-# MarylandIQ Stage 1 Runbook
+# MarylandIQ Build Runbook
 
-This project is currently in Stage 1: database foundation, precinct loading, contest loading, and ballot lookup validation.
+This project has completed the core Stage 1 foundation and the first Stage 2 candidate ingest pass.
 
 ## Current source decisions
 
@@ -33,12 +33,29 @@ Run these in Supabase SQL editor:
 2. `python -m pipeline.load_precinct_boundaries`
 3. `python -m pipeline.load_district_boundaries`
 
+## Proven state
+
+- Supabase schema, functions, and jurisdiction seed are applied.
+- Official Maryland 2026 precinct boundaries load from Maryland iMAP.
+- District-level precinct mappings load from 2022 Maryland SBE precinct results.
+- `lookup_ballot()` returns plausible 2026 primary contests for real Maryland coordinates.
+- `lookup_ballot()` now supports an optional voter party parameter for primary filtering.
+- `pipeline.ingest_sbe_candidates.py` successfully ingests the live 2026 Maryland SBE local candidate page.
+- Candidate party values are now populated (`Democratic`, `Republican`, `Nonpartisan`, `Unaffiliated`).
+
 ## Important caveats
 
-- `pipeline/ingest_contests.py` is still dependent on the 2026 SBE page structure and may need selector updates once the final page is live.
-- `pipeline/load_district_boundaries.py` assumes the 2022 SBE precinct result filenames and field names are close to the current pattern. If Maryland changes those filenames or headers, adjust the parser before relying on the mapping output.
+- `pipeline/ingest_contests.py` and `pipeline/ingest_sbe_candidates.py` depend on the current 2026 SBE page structure and may need selector updates if Maryland revises the markup.
+- `pipeline/load_district_boundaries.py` still has a small residue of unmatched precinct codes caused by county-specific 2022 vs 2026 precinct-code differences.
 - The precinct schema still uses `MultiPolygon`, which is appropriate and safe even though the Maryland layer is documented as polygon geometry.
 
-## Validation target
+## Stage 1 validation target
 
 Stage 1 is complete when a real Maryland latitude/longitude passed to `lookup_ballot()` returns the expected upcoming contests from Supabase.
+
+## Stage 2 next steps
+
+1. `python -m pipeline.ingest_sbe_candidates`
+2. `python -m pipeline.scrape_candidate_websites`
+3. `python -m pipeline.enrich_candidates`
+4. Build `compute_completeness.py`

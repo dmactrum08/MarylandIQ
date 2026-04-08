@@ -50,7 +50,6 @@ import re
 import sys
 import time
 from dataclasses import dataclass
-
 import requests
 
 from pipeline.utils.supabase_client import get_client
@@ -66,44 +65,61 @@ log = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
-# SBE precinct-level results CSV index for 2022 general election.
-# Each county has its own file. The index page lists them all.
-# We iterate over this list and download each one.
-SBE_RESULTS_BASE = "https://elections.maryland.gov/elections/2022/election_data"
+SBE_RESULTS_BASE = "https://elections.maryland.gov/elections/archive/2022/election_data"
 
-# Map our jurisdiction slugs → SBE county name strings (as they appear in CSVs)
-# and their results filename prefixes. Adjust if the 2022 filenames differ.
-# Pattern: {County_Name}_By_Precinct_Results_{election}.csv
-JURISDICTION_SBE_FILES = {
-    "allegany-county":       "Allegany",
-    "anne-arundel-county":   "Anne_Arundel",
-    "baltimore-city":        "Baltimore_City",
-    "baltimore-county":      "Baltimore_County",
-    "calvert-county":        "Calvert",
-    "caroline-county":       "Caroline",
-    "carroll-county":        "Carroll",
-    "cecil-county":          "Cecil",
-    "charles-county":        "Charles",
-    "dorchester-county":     "Dorchester",
-    "frederick-county":      "Frederick",
-    "garrett-county":        "Garrett",
-    "harford-county":        "Harford",
-    "howard-county":         "Howard",
-    "kent-county":           "Kent",
-    "montgomery-county":     "Montgomery",
-    "prince-georges-county": "Prince_Georges",
-    "queen-annes-county":    "Queen_Annes",
-    "saint-marys-county":    "Saint_Marys",
-    "somerset-county":       "Somerset",
-    "talbot-county":         "Talbot",
-    "washington-county":     "Washington",
-    "wicomico-county":       "Wicomico",
-    "worcester-county":      "Worcester",
+JURISDICTION_DISPLAY_NAMES = {
+    "allegany-county": "Allegany County",
+    "anne-arundel-county": "Anne Arundel County",
+    "baltimore-city": "Baltimore City",
+    "baltimore-county": "Baltimore County",
+    "calvert-county": "Calvert County",
+    "caroline-county": "Caroline County",
+    "carroll-county": "Carroll County",
+    "cecil-county": "Cecil County",
+    "charles-county": "Charles County",
+    "dorchester-county": "Dorchester County",
+    "frederick-county": "Frederick County",
+    "garrett-county": "Garrett County",
+    "harford-county": "Harford County",
+    "howard-county": "Howard County",
+    "kent-county": "Kent County",
+    "montgomery-county": "Montgomery County",
+    "prince-georges-county": "Prince George's County",
+    "queen-annes-county": "Queen Anne's County",
+    "saint-marys-county": "Saint Mary's County",
+    "somerset-county": "Somerset County",
+    "talbot-county": "Talbot County",
+    "washington-county": "Washington County",
+    "wicomico-county": "Wicomico County",
+    "worcester-county": "Worcester County",
 }
 
-# SBE 2022 general election results filename suffix
-# Check the actual index page if this pattern doesn't match
-ELECTION_SUFFIX = "General"
+JURISDICTION_RESULTS_CODES = {
+    "allegany-county": "01",
+    "anne-arundel-county": "02",
+    "baltimore-city": "03",
+    "baltimore-county": "04",
+    "calvert-county": "05",
+    "caroline-county": "06",
+    "carroll-county": "07",
+    "cecil-county": "08",
+    "charles-county": "09",
+    "dorchester-county": "10",
+    "frederick-county": "11",
+    "garrett-county": "12",
+    "harford-county": "13",
+    "howard-county": "14",
+    "kent-county": "15",
+    "montgomery-county": "16",
+    "prince-georges-county": "17",
+    "queen-annes-county": "18",
+    "saint-marys-county": "19",
+    "somerset-county": "20",
+    "talbot-county": "21",
+    "washington-county": "22",
+    "wicomico-county": "23",
+    "worcester-county": "24",
+}
 
 REQUEST_TIMEOUT = 30
 REQUEST_DELAY = 1.0
@@ -122,40 +138,34 @@ class PrecinctContestMapping:
 # SBE CSV parsing
 # ---------------------------------------------------------------------------
 
-def build_csv_url(county_prefix: str) -> str:
-    """
-    Build the URL for a county's precinct-level results CSV.
-    Actual URL pattern confirmed from SBE website — adjust if needed.
-    """
-    return (
-        f"{SBE_RESULTS_BASE}/"
-        f"{county_prefix}_By_Precinct_Results_{ELECTION_SUFFIX}.csv"
-    )
+def build_precinct_results_url(results_code: str) -> str:
+    return f"{SBE_RESULTS_BASE}/GG22_{results_code}PrecinctsResults.csv"
 
 
-def fetch_county_results(county_prefix: str) -> list[dict]:
+def fetch_county_results(url: str, display_name: str) -> list[dict]:
     """Download and parse a county's precinct results CSV."""
-    url = build_csv_url(county_prefix)
-
     try:
         resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers={
             "User-Agent": "MarylandIQ/1.0 (voter information platform)"
         })
         resp.raise_for_status()
     except requests.HTTPError as e:
-        log.warning(f"  HTTP error for {county_prefix}: {e} — URL: {url}")
+        log.warning(f"  HTTP error for {display_name}: {e} — URL: {url}")
         return []
     except requests.RequestException as e:
-        log.warning(f"  Request failed for {county_prefix}: {e}")
+        log.warning(f"  Request failed for {display_name}: {e}")
         return []
 
-    # SBE CSVs are typically tab-delimited; try both
     content = resp.text
+    if "<!doctype html" in content[:200].lower():
+        log.warning(f"  Expected CSV but received HTML for {display_name}: {url}")
+        return []
+
     delimiter = "\t" if "\t" in content[:500] else ","
 
     reader = csv.DictReader(io.StringIO(content), delimiter=delimiter)
     rows = list(reader)
-    log.info(f"  {county_prefix}: {len(rows)} rows, fields: {reader.fieldnames}")
+    log.info(f"  {display_name}: {len(rows)} rows, fields: {reader.fieldnames}")
     return rows
 
 
@@ -172,20 +182,29 @@ def extract_district_mappings(
     seen = set()  # deduplicate (precinct, office, district) combinations
 
     for row in rows:
-        # Field names vary slightly by county; try common variations
+        # 2022 general precinct files use:
+        #   - Office Name
+        #   - Office District
+        #   - Election District - Precinct
+        # Keep fallbacks for format drift.
         office = (
             row.get("Office Name") or row.get("OfficeName") or
             row.get("Office") or ""
         ).strip()
 
         district = (
-            row.get("District") or row.get("DistrictNumber") or
+            row.get("Office District") or
+            row.get("District") or
+            row.get("DistrictNumber") or
             row.get("District Number") or ""
         ).strip()
 
         precinct = (
-            row.get("Precinct") or row.get("Precinct Name") or
-            row.get("PrecinctName") or row.get("Precinct Code") or ""
+            row.get("Election District - Precinct") or
+            row.get("Precinct") or
+            row.get("Precinct Name") or
+            row.get("PrecinctName") or
+            row.get("Precinct Code") or ""
         ).strip()
 
         if not office or not precinct:
@@ -251,7 +270,44 @@ def normalize_office_name(raw: str) -> str:
     text = text.replace("&", "and")
     text = re.sub(r"[^a-z0-9]+", " ", text)
     text = re.sub(r"\s+", " ", text)
-    return text.strip()
+    text = text.strip()
+
+    # Harmonize SBE result labels with our contest office names.
+    replacements = {
+        "county council": "county council member",
+        "board of education": "board of education member",
+        "board of ed": "board of education member",
+        "school board": "board of education member",
+        "county commissioners": "county commissioner",
+        "county commissioner": "county commissioner",
+    }
+
+    return replacements.get(text, text)
+
+
+def normalize_precinct_token(raw: str) -> str:
+    """Normalize precinct identifiers such as '21-017', '21-17', or '001'."""
+    text = raw.strip()
+    text = re.sub(r"\s+", "", text)
+    if not text:
+        return ""
+
+    match = re.search(r"(\d{1,2})-(\d{1,3})", text)
+    if match:
+        district = match.group(1).zfill(2)
+        precinct = match.group(2).zfill(3)
+        return f"{district}-{precinct}"
+
+    match = re.search(r"(\d{1,2})[^\d]+(\d{1,3})", text)
+    if match:
+        district = match.group(1).zfill(2)
+        precinct = match.group(2).zfill(3)
+        return f"{district}-{precinct}"
+
+    if text.isdigit():
+        return text.zfill(3 if len(text) <= 3 else len(text))
+
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -268,15 +324,25 @@ def build_precinct_lookup(precinct_rows: list[dict]) -> dict[str, str]:
         if not precinct_code:
             continue
 
+        candidates = {precinct_code}
+
+        if len(precinct_code) > 5:
+            # Maryland VTD values are usually county GEOID + district/precinct.
+            candidates.add(precinct_code[5:])
+
         suffix = precinct_code.split("-")[-1]
-        candidates = {precinct_code, suffix}
+        candidates.add(suffix)
 
         if suffix.isdigit():
             candidates.add(str(int(suffix)))
             candidates.add(suffix.zfill(6))
 
-        for candidate in candidates:
-            lookup.setdefault(candidate, precinct_id)
+        normalized_candidates = {normalize_precinct_token(candidate) for candidate in candidates}
+        normalized_candidates.discard("")
+
+        for candidate in candidates | normalized_candidates:
+            if candidate:
+                lookup.setdefault(candidate, precinct_id)
 
     return lookup
 
@@ -287,7 +353,7 @@ def find_precinct_id(precinct_lookup: dict[str, str], precinct_code_raw: str) ->
     if not raw:
         return None
 
-    candidates = {raw}
+    candidates = {raw, normalize_precinct_token(raw)}
     if raw.isdigit():
         candidates.add(str(int(raw)))
         candidates.add(raw.zfill(6))
@@ -364,18 +430,28 @@ def load_district_boundaries() -> dict:
     total_unmatched_precincts = 0
     total_unmatched_contests = 0
     counties_processed = 0
+    unmatched_precinct_examples: dict[str, list[str]] = {}
+    unmatched_contest_examples: dict[str, list[str]] = {}
 
-    for jurisdiction_slug, county_prefix in JURISDICTION_SBE_FILES.items():
+    for jurisdiction_slug, display_name in JURISDICTION_DISPLAY_NAMES.items():
         jurisdiction_id = jurisdiction_map.get(jurisdiction_slug)
         if not jurisdiction_id:
             log.warning(f"Jurisdiction not found in DB: {jurisdiction_slug}")
             continue
 
-        log.info(f"Processing {jurisdiction_slug} ({county_prefix})...")
-        rows = fetch_county_results(county_prefix)
+        results_code = JURISDICTION_RESULTS_CODES.get(jurisdiction_slug)
+        if not results_code:
+            log.warning(f"No precinct-results code found for {display_name}")
+            time.sleep(REQUEST_DELAY)
+            continue
+
+        url = build_precinct_results_url(results_code)
+
+        log.info(f"Processing {jurisdiction_slug} ({display_name})...")
+        rows = fetch_county_results(url, display_name)
 
         if not rows:
-            log.warning(f"  No data returned for {county_prefix}")
+            log.warning(f"  No data returned for {display_name}")
             time.sleep(REQUEST_DELAY)
             continue
 
@@ -404,6 +480,9 @@ def load_district_boundaries() -> dict:
                     f"in {jurisdiction_slug}"
                 )
                 total_unmatched_precincts += 1
+                examples = unmatched_precinct_examples.setdefault(jurisdiction_slug, [])
+                if len(examples) < 5 and mapping.precinct_code_raw not in examples:
+                    examples.append(mapping.precinct_code_raw)
                 continue
 
             contest_id = find_contest_id(contest_lookup, mapping.office_name, mapping.district)
@@ -413,6 +492,10 @@ def load_district_boundaries() -> dict:
                     f"district={mapping.district} in {jurisdiction_slug}"
                 )
                 total_unmatched_contests += 1
+                examples = unmatched_contest_examples.setdefault(jurisdiction_slug, [])
+                sample = f"{mapping.office_name} | {mapping.district}"
+                if len(examples) < 5 and sample not in examples:
+                    examples.append(sample)
                 continue
 
             rows_to_insert.append({
@@ -453,11 +536,8 @@ def load_district_boundaries() -> dict:
             f"\nUnmatched records detected. This is expected on first run if:\n"
             f"  - The SBE CSV precinct codes use different formatting than TIGER\n"
             f"  - contests table is not yet populated (run ingest_contests.py first)\n"
-            f"\nTo debug, inspect the actual CSV field names by running:\n"
-            f"  python -c \"from pipeline.load_district_boundaries import "
-            f"fetch_county_results; r=fetch_county_results('Montgomery'); "
-            f"print(r[0] if r else 'empty')\"\n"
-            f"\nThen adjust the field names in extract_district_mappings() to match."
+            f"\nSample unmatched precinct values by county: {unmatched_precinct_examples}"
+            f"\nSample unmatched contest values by county: {unmatched_contest_examples}"
         )
 
     return summary

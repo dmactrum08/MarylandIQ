@@ -59,6 +59,7 @@ PRECINCT_LAYER_URL = (
 
 ARCGIS_PAGE_SIZE = 1000
 REQUEST_DELAY_SECONDS = 0.5
+OBJECT_ID_BATCH_SIZE = 200
 
 COUNTY_FIPS_TO_SLUG = {
     "001": "allegany-county",
@@ -91,7 +92,7 @@ VALIDATION_SAMPLES = [
     (38.9897, -76.9378, "prince-georges-county", "Greenbelt — Prince George's County"),
     (39.2904, -76.6122, "baltimore-city", "Baltimore City — downtown"),
     (39.0458, -76.6413, "anne-arundel-county", "Annapolis — Anne Arundel County"),
-    (39.4926, -77.0144, "montgomery-county", "Gaithersburg — Montgomery County"),
+    (39.1434, -77.2014, "montgomery-county", "Gaithersburg — Montgomery County"),
     (38.6785, -76.0730, "talbot-county", "Easton — Talbot County"),
 ]
 
@@ -100,38 +101,56 @@ VALIDATION_SAMPLES = [
 # ArcGIS fetch helpers
 # ---------------------------------------------------------------------------
 
-def fetch_arcgis_page(offset: int) -> dict:
+def fetch_object_ids() -> list[int]:
     response = requests.get(
         f"{PRECINCT_LAYER_URL}/query",
         params={
             "where": "1=1",
-            "outFields": "JURSCODE,COUNTY,COUNTYNAME,VTD,LABEL,NAME",
-            "returnGeometry": "true",
-            "outSR": "4326",
-            "f": "geojson",
-            "resultOffset": offset,
-            "resultRecordCount": ARCGIS_PAGE_SIZE,
+            "returnIdsOnly": "true",
+            "f": "json",
         },
         timeout=30,
     )
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+    return data.get("objectIds", [])
+
+
+def fetch_feature_batch(object_ids: list[int]) -> list[dict]:
+    response = requests.get(
+        f"{PRECINCT_LAYER_URL}/query",
+        params={
+            "objectIds": ",".join(str(object_id) for object_id in object_ids),
+            "outFields": "OBJECTID,JURSCODE,COUNTY,COUNTYNAME,VTD,LABEL,NAME",
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "geojson",
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    data = response.json()
+    return data.get("features", [])
 
 
 def fetch_all_features() -> list[dict]:
+    object_ids = fetch_object_ids()
+    if not object_ids:
+        return []
+
+    object_ids = sorted(object_ids)
+    log.info(f"Found {len(object_ids)} precinct object IDs")
+
     all_features: list[dict] = []
-    offset = 0
 
-    while True:
-        data = fetch_arcgis_page(offset)
-        features = data.get("features", [])
+    for index in range(0, len(object_ids), OBJECT_ID_BATCH_SIZE):
+        batch_ids = object_ids[index:index + OBJECT_ID_BATCH_SIZE]
+        features = fetch_feature_batch(batch_ids)
         all_features.extend(features)
-        log.info(f"  Fetched {len(features)} features (total so far: {len(all_features)})")
-
-        if not data.get("exceededTransferLimit", False) or not features:
-            break
-
-        offset += ARCGIS_PAGE_SIZE
+        log.info(
+            f"  Fetched {len(features)} features in batch "
+            f"({len(all_features)} total)"
+        )
         time.sleep(REQUEST_DELAY_SECONDS)
 
     return all_features
