@@ -1,17 +1,19 @@
 """
 enrich_candidates.py
 
-Stage 2 script — send scraped candidate content to Gemini 2.0 Flash and store
-AI-generated summary, issue tags, and source evidence in candidate_enrichment.
+Stage 2 script — send scraped candidate content to a local LM Studio model and
+store AI-generated summary, issue tags, and source evidence in candidate_enrichment.
 
 Algorithm per implementation strategy section 4.6:
     1. Query candidates where ai_generated_at IS NULL (or enrichment_version stale)
        AND (scraped_website_text IS NOT NULL OR social_inference_text IS NOT NULL)
     2. For each candidate, build a user prompt with full context
-    3. Call Gemini 2.0 Flash; parse JSON response
+    3. Call local LM Studio (OpenAI-compatible API); parse JSON response
     4. Validate issue_tags against approved list
     5. Upsert candidate_enrichment; set ai_generated_at + enrichment_version
-    6. Rate limit: sleep 4 s between calls (free tier = 15 req/min)
+
+LM Studio must be running with a model loaded at http://localhost:1234.
+Set LM_STUDIO_MODEL in .env to override the model name (default: "local-model").
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-import google.generativeai as genai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 from pipeline.utils.supabase_client import get_client
@@ -42,7 +44,7 @@ log = logging.getLogger(__name__)
 # Increment when the prompt or schema changes; triggers re-enrichment of all rows.
 CURRENT_VERSION = 1
 
-RATE_LIMIT_SLEEP = 4  # seconds between API calls; keeps us under 15 req/min
+LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
 
 APPROVED_ISSUE_TAGS = [
     "Education",
@@ -70,6 +72,7 @@ APPROVED_ISSUE_TAGS = [
 APPROVED_TAGS_LOWER = {t.lower(): t for t in APPROVED_ISSUE_TAGS}
 
 SYSTEM_PROMPT = (
+    "/no_think "
     "You are a factual summarizer for a nonpartisan voter information platform. "
     "You extract and summarize only what candidates have explicitly stated. "
     "You never invent positions. If information is insufficient, return null "
@@ -88,14 +91,22 @@ class EnrichmentTarget:
     social_inference_text: Optional[str]
 
 
+def _truncate(text: str, max_chars: int) -> str:
+    """Trim text to max_chars, appending a note if cut."""
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "\n[...truncated]"
+
+
 def build_user_prompt(target: EnrichmentTarget) -> str:
     sources: list[str] = []
     if target.campaign_website_url:
         sources.append(target.campaign_website_url)
 
     source_line = ", ".join(sources) if sources else "none"
-    website_text = target.scraped_website_text or "none"
-    social_text = target.social_inference_text or "none"
+    # ~4 chars per token; reserve ~600 tokens for prompt scaffold + JSON response
+    website_text = _truncate(target.scraped_website_text or "none", 6000)
+    social_text = _truncate(target.social_inference_text or "none", 2000)
 
     return (
         f"Candidate: {target.full_name}\n"
@@ -117,10 +128,12 @@ def build_user_prompt(target: EnrichmentTarget) -> str:
     )
 
 
-def parse_gemini_response(raw: str) -> Optional[dict]:
-    """Extract and parse JSON from Gemini's response text."""
+def parse_lm_response(raw: str) -> Optional[dict]:
+    """Extract and parse JSON from the model's response text."""
+    # Strip Qwen3 thinking blocks if thinking mode wasn't fully suppressed
+    cleaned = re.sub(r"<think>.*?</think>", "", raw.strip(), flags=re.DOTALL)
     # Strip markdown code fences if the model added them despite instructions
-    cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.IGNORECASE)
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned.strip(), flags=re.IGNORECASE)
     cleaned = re.sub(r"\s*```$", "", cleaned.strip())
     try:
         return json.loads(cleaned)
@@ -257,16 +270,8 @@ def persist_result(supabase, target: EnrichmentTarget, parsed: dict) -> None:
 
 
 def enrich_candidates() -> dict[str, int]:
-    api_key = os.environ.get("GOOGLE_AI_STUDIO_API_KEY")
-    if not api_key:
-        log.error("GOOGLE_AI_STUDIO_API_KEY not set")
-        sys.exit(1)
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
-        system_instruction=SYSTEM_PROMPT,
-    )
+    model_name = os.environ.get("LM_STUDIO_MODEL", "local-model")
+    client = OpenAI(base_url=LM_STUDIO_BASE_URL, api_key="lm-studio")
 
     supabase = get_client()
     targets = fetch_targets(supabase)
@@ -277,21 +282,25 @@ def enrich_candidates() -> dict[str, int]:
     skipped = 0
 
     for i, target in enumerate(targets):
-        if i > 0:
-            time.sleep(RATE_LIMIT_SLEEP)
-
         prompt = build_user_prompt(target)
         try:
-            response = model.generate_content(prompt)
-            raw = response.text
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.2,
+            )
+            raw = response.choices[0].message.content
         except Exception as exc:
-            log.error(f"Gemini API error for {target.full_name}: {exc}")
+            log.error(f"LM Studio API error for {target.full_name}: {exc}")
             errors += 1
             continue
 
-        parsed = parse_gemini_response(raw)
+        parsed = parse_lm_response(raw)
         if parsed is None:
-            log.warning(f"Skipping {target.full_name} — could not parse Gemini response")
+            log.warning(f"Skipping {target.full_name} — could not parse model response")
             skipped += 1
             continue
 
