@@ -87,34 +87,25 @@ def compute_score(row: CandidateRow) -> int:
 
 
 def fetch_candidates(supabase) -> list[CandidateRow]:
-    candidates = (
+    records = (
         supabase.table("candidates")
         .select(
             "id, full_name, party, filing_status, filed_date, "
-            "campaign_website_url, facebook_url, twitter_handle, linkedin_url"
+            "campaign_website_url, facebook_url, twitter_handle, linkedin_url, "
+            "candidate_enrichment(scraped_website_text, ai_summary, issue_tags)"
         )
         .execute()
         .data
     )
 
-    if not candidates:
+    if not records:
         return []
 
-    candidate_ids = [c["id"] for c in candidates]
-
-    enrichments = (
-        supabase.table("candidate_enrichment")
-        .select("candidate_id, scraped_website_text, ai_summary, issue_tags")
-        .in_("candidate_id", candidate_ids)
-        .execute()
-        .data
-    )
-
-    enrichment_by_id = {e["candidate_id"]: e for e in enrichments}
-
     rows: list[CandidateRow] = []
-    for c in candidates:
-        enr = enrichment_by_id.get(c["id"], {})
+    for c in records:
+        enr = c.get("candidate_enrichment") or {}
+        if isinstance(enr, list):
+            enr = enr[0] if enr else {}
         rows.append(
             CandidateRow(
                 candidate_id=c["id"],

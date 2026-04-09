@@ -52,6 +52,7 @@ log = logging.getLogger(__name__)
 CURRENT_VERSION = 1
 
 LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 GEMINI_RATE_LIMIT_SLEEP = 4  # seconds between calls; keeps under 15 req/min
 
 APPROVED_ISSUE_TAGS = [
@@ -120,6 +121,33 @@ class LMStudioBackend:
         pass  # no rate limit for local
 
 
+class OpenRouterBackend:
+    def __init__(self) -> None:
+        from openai import OpenAI
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            log.error("OPENROUTER_API_KEY not set in .env")
+            sys.exit(1)
+        model = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.5-flash-preview")
+        self._model = model
+        self._client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key)
+        log.info(f"Backend: OpenRouter  model={model}")
+
+    def call(self, prompt: str) -> str:
+        response = self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+        )
+        return response.choices[0].message.content
+
+    def sleep_between_calls(self) -> None:
+        time.sleep(1)  # light throttle; adjust if hitting rate limits
+
+
 class GeminiBackend:
     def __init__(self) -> None:
         import google.generativeai as genai
@@ -145,6 +173,8 @@ class GeminiBackend:
 def make_backend(name: str) -> AIBackend:
     if name == "gemini":
         return GeminiBackend()
+    if name == "openrouter":
+        return OpenRouterBackend()
     return LMStudioBackend()
 
 
@@ -278,17 +308,22 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
 
     enrichment_by_id = {r["candidate_id"]: r for r in all_rows}
 
-    candidates = (
-        supabase.table("candidates")
-        .select(
-            "id, full_name, campaign_website_url, "
-            "contest_id, contests(office_id, offices(name), "
-            "jurisdiction_id, jurisdictions(name))"
+    # Fetch candidates in batches to stay under URL length limits
+    BATCH = 100
+    candidates: list[dict] = []
+    for i in range(0, len(candidate_ids), BATCH):
+        chunk = candidate_ids[i : i + BATCH]
+        candidates += (
+            supabase.table("candidates")
+            .select(
+                "id, full_name, campaign_website_url, "
+                "contest_id, contests(office_id, offices(name), "
+                "jurisdiction_id, jurisdictions(name))"
+            )
+            .in_("id", chunk)
+            .execute()
+            .data
         )
-        .in_("id", candidate_ids)
-        .execute()
-        .data
-    )
 
     targets: list[EnrichmentTarget] = []
     for cand in candidates:
@@ -411,7 +446,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enrich candidates with AI-generated summaries.")
     parser.add_argument(
         "--backend",
-        choices=["lmstudio", "gemini"],
+        choices=["lmstudio", "gemini", "openrouter"],
         default="lmstudio",
         help="AI backend to use (default: lmstudio)",
     )
