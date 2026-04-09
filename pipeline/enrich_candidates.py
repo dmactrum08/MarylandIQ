@@ -1,23 +1,31 @@
 """
 enrich_candidates.py
 
-Stage 2 script — send scraped candidate content to a local LM Studio model and
-store AI-generated summary, issue tags, and source evidence in candidate_enrichment.
+Stage 2 script — send scraped candidate content to an AI model and store
+AI-generated summary, issue tags, and source evidence in candidate_enrichment.
 
 Algorithm per implementation strategy section 4.6:
     1. Query candidates where ai_generated_at IS NULL (or enrichment_version stale)
        AND (scraped_website_text IS NOT NULL OR social_inference_text IS NOT NULL)
     2. For each candidate, build a user prompt with full context
-    3. Call local LM Studio (OpenAI-compatible API); parse JSON response
+    3. Call AI model; parse JSON response
     4. Validate issue_tags against approved list
     5. Upsert candidate_enrichment; set ai_generated_at + enrichment_version
 
-LM Studio must be running with a model loaded at http://localhost:1234.
-Set LM_STUDIO_MODEL in .env to override the model name (default: "local-model").
+Backend options (--backend flag):
+    lmstudio  (default) Local LM Studio at http://localhost:1234. Set LM_STUDIO_MODEL
+              in .env to override the model identifier (default: "local-model").
+    gemini    Google AI Studio. Requires GOOGLE_AI_STUDIO_API_KEY in .env.
+              Rate limited to 15 req/min (free tier); sleeps 4s between calls.
+
+Usage:
+    python -m pipeline.enrich_candidates                  # LM Studio
+    python -m pipeline.enrich_candidates --backend gemini # Gemini
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import os
@@ -25,9 +33,8 @@ import re
 import sys
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Protocol
 
-from openai import OpenAI
 from dotenv import load_dotenv
 
 from pipeline.utils.supabase_client import get_client
@@ -45,6 +52,7 @@ log = logging.getLogger(__name__)
 CURRENT_VERSION = 1
 
 LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
+GEMINI_RATE_LIMIT_SLEEP = 4  # seconds between calls; keeps under 15 req/min
 
 APPROVED_ISSUE_TAGS = [
     "Education",
@@ -80,6 +88,70 @@ SYSTEM_PROMPT = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Backend abstraction
+# ---------------------------------------------------------------------------
+
+class AIBackend(Protocol):
+    def call(self, prompt: str) -> str: ...
+    def sleep_between_calls(self) -> None: ...
+
+
+class LMStudioBackend:
+    def __init__(self) -> None:
+        from openai import OpenAI
+        model = os.environ.get("LM_STUDIO_MODEL", "local-model")
+        self._model = model
+        self._client = OpenAI(base_url=LM_STUDIO_BASE_URL, api_key="lm-studio")
+        log.info(f"Backend: LM Studio  model={model}  url={LM_STUDIO_BASE_URL}")
+
+    def call(self, prompt: str) -> str:
+        response = self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+        )
+        return response.choices[0].message.content
+
+    def sleep_between_calls(self) -> None:
+        pass  # no rate limit for local
+
+
+class GeminiBackend:
+    def __init__(self) -> None:
+        import google.generativeai as genai
+        api_key = os.environ.get("GOOGLE_AI_STUDIO_API_KEY")
+        if not api_key:
+            log.error("GOOGLE_AI_STUDIO_API_KEY not set")
+            sys.exit(1)
+        genai.configure(api_key=api_key)
+        self._model = genai.GenerativeModel(
+            model_name="gemini-flash-latest",
+            system_instruction=SYSTEM_PROMPT,
+        )
+        log.info("Backend: Gemini  model=gemini-flash-latest")
+
+    def call(self, prompt: str) -> str:
+        response = self._model.generate_content(prompt)
+        return response.text
+
+    def sleep_between_calls(self) -> None:
+        time.sleep(GEMINI_RATE_LIMIT_SLEEP)
+
+
+def make_backend(name: str) -> AIBackend:
+    if name == "gemini":
+        return GeminiBackend()
+    return LMStudioBackend()
+
+
+# ---------------------------------------------------------------------------
+# Data model
+# ---------------------------------------------------------------------------
+
 @dataclass
 class EnrichmentTarget:
     candidate_id: str
@@ -90,6 +162,10 @@ class EnrichmentTarget:
     scraped_website_text: Optional[str]
     social_inference_text: Optional[str]
 
+
+# ---------------------------------------------------------------------------
+# Prompt building
+# ---------------------------------------------------------------------------
 
 def _truncate(text: str, max_chars: int) -> str:
     """Trim text to max_chars, appending a note if cut."""
@@ -128,7 +204,11 @@ def build_user_prompt(target: EnrichmentTarget) -> str:
     )
 
 
-def parse_lm_response(raw: str) -> Optional[dict]:
+# ---------------------------------------------------------------------------
+# Response parsing
+# ---------------------------------------------------------------------------
+
+def parse_response(raw: str) -> Optional[dict]:
     """Extract and parse JSON from the model's response text."""
     # Strip Qwen3 thinking blocks if thinking mode wasn't fully suppressed
     cleaned = re.sub(r"<think>.*?</think>", "", raw.strip(), flags=re.DOTALL)
@@ -158,6 +238,10 @@ def validate_tags(tags: list) -> list[str]:
     return validated
 
 
+# ---------------------------------------------------------------------------
+# DB helpers
+# ---------------------------------------------------------------------------
+
 def fetch_targets(supabase) -> list[EnrichmentTarget]:
     """Return candidates that need enrichment (no AI output yet or stale version)."""
     rows = (
@@ -166,9 +250,7 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
             "candidate_id, scraped_website_text, social_inference_text, "
             "ai_generated_at, enrichment_version"
         )
-        .or_(
-            f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}"
-        )
+        .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
         .not_.is_("scraped_website_text", "null")
         .execute()
         .data
@@ -181,9 +263,7 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
             "candidate_id, scraped_website_text, social_inference_text, "
             "ai_generated_at, enrichment_version"
         )
-        .or_(
-            f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}"
-        )
+        .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
         .is_("scraped_website_text", "null")
         .not_.is_("social_inference_text", "null")
         .execute()
@@ -198,7 +278,6 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
 
     enrichment_by_id = {r["candidate_id"]: r for r in all_rows}
 
-    # Fetch candidate + contest + office + jurisdiction in one join query
     candidates = (
         supabase.table("candidates")
         .select(
@@ -269,10 +348,12 @@ def persist_result(supabase, target: EnrichmentTarget, parsed: dict) -> None:
     ).eq("candidate_id", target.candidate_id).execute()
 
 
-def enrich_candidates() -> dict[str, int]:
-    model_name = os.environ.get("LM_STUDIO_MODEL", "local-model")
-    client = OpenAI(base_url=LM_STUDIO_BASE_URL, api_key="lm-studio")
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
+def enrich_candidates(backend_name: str = "lmstudio") -> dict[str, int]:
+    backend = make_backend(backend_name)
     supabase = get_client()
     targets = fetch_targets(supabase)
     log.info(f"Found {len(targets)} candidates needing enrichment")
@@ -282,23 +363,18 @@ def enrich_candidates() -> dict[str, int]:
     skipped = 0
 
     for i, target in enumerate(targets):
+        if i > 0:
+            backend.sleep_between_calls()
+
         prompt = build_user_prompt(target)
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.2,
-            )
-            raw = response.choices[0].message.content
+            raw = backend.call(prompt)
         except Exception as exc:
-            log.error(f"LM Studio API error for {target.full_name}: {exc}")
+            log.error(f"AI API error for {target.full_name}: {exc}")
             errors += 1
             continue
 
-        parsed = parse_lm_response(raw)
+        parsed = parse_response(raw)
         if parsed is None:
             log.warning(f"Skipping {target.full_name} — could not parse model response")
             skipped += 1
@@ -324,6 +400,7 @@ def enrich_candidates() -> dict[str, int]:
             "script_name": "enrich_candidates.py",
             "candidates_processed": processed,
             "errors": errors + skipped,
+            "notes": f"backend={backend_name}",
         }
     ).execute()
 
@@ -331,10 +408,19 @@ def enrich_candidates() -> dict[str, int]:
 
 
 if __name__ == "__main__":
-    log.info("=== enrich_candidates.py ===")
+    parser = argparse.ArgumentParser(description="Enrich candidates with AI-generated summaries.")
+    parser.add_argument(
+        "--backend",
+        choices=["lmstudio", "gemini"],
+        default="lmstudio",
+        help="AI backend to use (default: lmstudio)",
+    )
+    args = parser.parse_args()
+
+    log.info(f"=== enrich_candidates.py  backend={args.backend} ===")
     try:
-        summary = enrich_candidates()
-        log.info(f"Done. {summary}")
+        result = enrich_candidates(backend_name=args.backend)
+        log.info(f"Done. {result}")
         sys.exit(0)
     except Exception as exc:
         log.error(f"Fatal error: {exc}")
