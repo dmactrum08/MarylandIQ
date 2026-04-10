@@ -25,9 +25,9 @@ Or to wipe all and start fresh:
     TRUNCATE ballot_measures;
 
 Usage:
-    python -m pipeline.ingest_ballot_measures                    # Gemini (default)
+    python -m pipeline.ingest_ballot_measures                    # LM Studio (default)
     python -m pipeline.ingest_ballot_measures --backend openrouter
-    python -m pipeline.ingest_ballot_measures --backend lmstudio
+    python -m pipeline.ingest_ballot_measures --backend gemini
     python -m pipeline.ingest_ballot_measures --no-ai            # ingest only, skip AI
 """
 
@@ -506,7 +506,7 @@ def generate_summaries(supabase, slugs: list[str], backend) -> int:
 # Main
 # ---------------------------------------------------------------------------
 
-def ingest_ballot_measures(backend_name: str = "gemini", skip_ai: bool = False) -> dict:
+def ingest_ballot_measures(backend_name: str = "lmstudio", skip_ai: bool = False) -> dict:
     supabase = get_client()
     start = time.time()
 
@@ -578,8 +578,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--backend",
         choices=["gemini", "openrouter", "lmstudio"],
-        default="gemini",
-        help="AI backend for summary generation (default: gemini)",
+        default="lmstudio",
+        help="AI backend for summary generation (default: lmstudio)",
     )
     parser.add_argument(
         "--no-ai",

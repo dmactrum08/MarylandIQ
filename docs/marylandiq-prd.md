@@ -15,7 +15,7 @@ Maryland voters in local races — school board, county council, sheriff, regist
 
 MarylandIQ fills that gap. It scrapes and aggregates public data from official sources, candidate websites, and social media, then uses an LLM layer to enrich thin candidate profiles and surface what voters actually need: plain-English summaries, issue tags, side-by-side comparisons, and a dead-simple address-based ballot lookup.
 
-The guiding constraint is near-zero cost. Every data source used in the MVP is free and publicly available. Hosting runs on free-tier infrastructure. The LLM runs on Gemini 2.0 Flash via Google AI Studio's free tier — projected cost is \$0/month at MVP scale.
+The guiding constraint is near-zero cost. Every data source used in the MVP is free and publicly available. Hosting runs on free-tier infrastructure. The LLM layer runs against a local LM Studio server by default, with hosted backends available as fallback options when needed.
 
 ## 2. Problem Statement
 ### 2.1 The local information gap
@@ -167,7 +167,7 @@ Each explainer is generated once via LLM using the official office description f
 | Issue tag extraction          | Candidate statements             | Cached on ingest                            |
 
 ### 5.2 Model selection & cost
-Use Gemini 2.0 Flash via Google AI Studio free tier. An API key is free at aistudio.google.com — no billing account required. The free tier allows 1,000 requests/day and 15 requests/minute. At MVP scale (500 candidates, ~50 ballot measures), peak daily API calls reach approximately 120 during an active enrichment run — well within the free tier. A 4-second sleep between calls keeps the per-minute rate limit respected.
+Use LM Studio locally as the default inference backend for candidate enrichment and thin-candidate social validation. Keep Gemini via Google AI Studio or OpenRouter available as fallbacks if the local server is unavailable or a particular model performs better for a task.
 
 Total projected monthly LLM cost: \$0. The Google AI Pro subscription already in place (\$20/month) provides a \$10/month Google Cloud credit as a backstop if scale ever exceeds the free tier — but this is not expected to be needed at MVP.
 
@@ -237,7 +237,7 @@ Website scraping uses a two-path strategy: fast path (requests + BeautifulSoup, 
 | Database       | Supabase (free tier)                          | Free — 500MB Postgres + PostGIS (required for boundary joins), 2GB bandwidth                  |
 | Scheduled jobs | GitHub Actions                                | Free — up to 2,000 min/month on public repo                                                   |
 | Web scraping   | Playwright + requests/BeautifulSoup           | Free — fast path first, Playwright fallback; 5 concurrent workers; runs inside GitHub Actions |
-| LLM            | Gemini 2.0 Flash via Google AI Studio         | Free — 1,000 requests/day free tier; API key at aistudio.google.com                           |
+| LLM            | LM Studio local server by default             | Free if run locally; optional Gemini/OpenRouter fallback                                      |
 | Search         | Supabase built-in full-text search (Postgres) | Free — no Algolia or Elasticsearch needed for MVP                                             |
 | Analytics      | Plausible or Umami self-hosted                | Free — privacy-preserving, no raw address storage                                             |
 

@@ -4,12 +4,12 @@ generate_office_explainers.py
 Stage 3 script — generate plain-English office explainers for each distinct
 office type in the offices table.
 
-One Gemini call per office (~12 offices total). Results are cached in
+One LLM call per office (~12 offices total). Results are cached in
 offices.explainer_text and never regenerated unless --force is passed.
 
 Usage:
-    python -m pipeline.generate_office_explainers                   # Gemini (default)
-    python -m pipeline.generate_office_explainers --backend lmstudio
+    python -m pipeline.generate_office_explainers                   # LM Studio (default)
+    python -m pipeline.generate_office_explainers --backend gemini
     python -m pipeline.generate_office_explainers --force           # re-generate all
 """
 
@@ -154,7 +154,7 @@ def fetch_offices(supabase, force: bool = False) -> list[dict]:
 # Main
 # ---------------------------------------------------------------------------
 
-def generate_office_explainers(backend_name: str = "gemini", force: bool = False) -> dict[str, int]:
+def generate_office_explainers(backend_name: str = "lmstudio", force: bool = False) -> dict[str, int]:
     backend = make_backend(backend_name)
     supabase = get_client()
 
@@ -216,13 +216,13 @@ def generate_office_explainers(backend_name: str = "gemini", force: bool = False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Generate plain-English office explainers via Gemini."
+        description="Generate plain-English office explainers via the configured AI backend."
     )
     parser.add_argument(
         "--backend",
         choices=["gemini", "lmstudio", "openrouter"],
-        default="gemini",
-        help="AI backend to use (default: gemini)",
+        default="lmstudio",
+        help="AI backend to use (default: lmstudio)",
     )
     parser.add_argument(
         "--force",

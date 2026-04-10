@@ -30,6 +30,7 @@ import sys
 import time
 import urllib.parse
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from html import unescape
 from typing import Optional
 
@@ -61,6 +62,10 @@ MAX_DDG_RESULTS = 3
 
 # Minimum text length to consider a social scrape successful
 MIN_USEFUL_TEXT = 100
+
+# Re-attempt candidates with no verified social text after this many days.
+# Successful captures remain cached and are not retried automatically.
+NULL_RESULT_RETRY_DAYS = 14
 
 # Phrases indicating we hit a login wall rather than actual content
 LOGIN_WALL_PHRASES = [
@@ -132,13 +137,29 @@ def fetch_thin_candidates(supabase, limit: Optional[int] = None) -> list[ThinCan
     )
 
     results: list[ThinCandidate] = []
+    retry_cutoff = datetime.now(timezone.utc) - timedelta(days=NULL_RESULT_RETRY_DAYS)
     for c in rows:
         # Normalise the enrichment embed (PostgREST may return list or dict)
         enr = c.get("candidate_enrichment") or {}
         if isinstance(enr, list):
             enr = enr[0] if enr else {}
-        if enr.get("social_scraped_at"):
-            continue  # already processed this cycle
+
+        social_text = enr.get("social_inference_text")
+        if social_text:
+            continue  # already have verified social content cached
+
+        scraped_at = enr.get("social_scraped_at")
+        if scraped_at:
+            try:
+                parsed = datetime.fromisoformat(scraped_at.replace("Z", "+00:00"))
+            except ValueError:
+                log.warning(
+                    f"Could not parse social_scraped_at for {c.get('full_name', 'unknown')}: "
+                    f"{scraped_at!r}; retrying candidate."
+                )
+            else:
+                if parsed > retry_cutoff:
+                    continue  # recent null result; wait before retrying
 
         contest = c.get("contests") or {}
         office_name = (contest.get("offices") or {}).get("name", "Unknown Office")
@@ -303,7 +324,7 @@ def search_duckduckgo_facebook(name: str, office: str, jurisdiction: str) -> lis
     Search DuckDuckGo for Facebook pages matching this candidate.
     Uses name + office + jurisdiction — never name alone.
     """
-    query = f'site:facebook.com "{name}" "{jurisdiction}" Maryland'
+    query = f'site:facebook.com "{name}" "{office}" "{jurisdiction}" Maryland'
     return _search_duckduckgo(query, "facebook.com")
 
 
@@ -312,7 +333,7 @@ def search_duckduckgo_linkedin(name: str, office: str, jurisdiction: str) -> lis
     Search DuckDuckGo for LinkedIn profiles matching this candidate.
     Restricts to /in/ profiles to avoid company/school pages.
     """
-    query = f'site:linkedin.com/in "{name}" "{jurisdiction}" Maryland'
+    query = f'site:linkedin.com/in "{name}" "{office}" "{jurisdiction}" Maryland'
     return _search_duckduckgo(query, "linkedin.com/in")
 
 
@@ -336,7 +357,7 @@ def validate_profile(candidate: ThinCandidate, profile_text: str, backend) -> bo
     )
 
     try:
-        raw = backend.call(prompt).strip()
+        raw = backend.call(prompt, system_prompt=VALIDATION_SYSTEM_PROMPT).strip()
         backend.sleep_between_calls()
     except Exception as exc:
         log.warning(f"LLM validation error for {candidate.full_name}: {exc}")

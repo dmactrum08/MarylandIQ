@@ -27,7 +27,7 @@ MarylandIQ is composed of four layers that are built in sequence. Each layer is 
 | **Layer**         | **What it is**                                                            | **Primary technology**                            | **Built in stage** |
 |-------------------|---------------------------------------------------------------------------|---------------------------------------------------|--------------------|
 | 1 — Data          | Pipeline that ingests, normalizes, enriches, and stores all election data | Python scripts + GitHub Actions + Supabase        | Stage 1–2          |
-| 2 — AI Enrichment | LLM layer that summarizes, infers, and tags candidate content             | Gemini 2.0 Flash via Google AI Studio (free tier) | Stage 3            |
+| 2 — AI Enrichment | LLM layer that summarizes, infers, and tags candidate content             | LM Studio (local) by default; Gemini/OpenRouter optional | Stage 3            |
 | 3 — Frontend      | Static site with ballot lookup, candidate pages, race pages               | Next.js (SSG) + Vercel                            | Stage 4            |
 | 4 — Ops           | Refresh scheduling, alerting, corrections inbox                           | GitHub Actions + email                            | Stage 5            |
 
@@ -259,7 +259,7 @@ The pipeline is a collection of Python scripts orchestrated by GitHub Actions. E
 | load_precinct_boundaries.py  | Once (rerun if boundaries update) | Fetch GeoJSON from ArcGIS REST; load into precincts; build precinct_contests mapping                                             |
 | scrape_candidate_websites.py | On new candidate detected         | Fast path (requests) first, Playwright fallback for JS sites; 5 concurrent workers; ~12–15 min for full run                      |
 | scrape_social_media.py       | Weekly for thin candidates        | 3-tier pipeline: follow official links → structured search with office+jurisdiction signals → LLM validation gate before storage |
-| enrich_candidates.py         | After scrape completes            | Send scraped content to Gemini 2.0 Flash; store summary, tags, sources                                                           |
+| enrich_candidates.py         | After scrape completes            | Send scraped content to the configured LLM backend (LM Studio by default); store summary, tags, sources                         |
 | compute_completeness.py      | After any enrichment run          | Score each candidate 0–100; update completeness_score column                                                                     |
 | detect_withdrawals.py        | Every 2 hrs on election week      | Diff current SBE data against DB; flag status changes; send alert                                                                |
 | trigger_build.py             | After any data change             | Call Vercel deploy hook to rebuild static pages                                                                                  |
@@ -510,7 +510,7 @@ Only runs for candidates whose completeness_score is below 40. Uses a three-tier
 >
 > For every candidate social profile found in Tier 2:
 >
-> Send to Gemini with a binary validation prompt:
+> Send to the configured LLM backend (LM Studio by default) with a binary validation prompt:
 >
 > ---
 >
@@ -575,7 +575,7 @@ Only runs for candidates whose completeness_score is below 40. Uses a three-tier
 > Flag candidate for enrich_candidates.py run
 
 ### 4.6 LLM enrichment — algorithm and prompts
-This is where Gemini 2.0 Flash generates the content voters see. Every generation is sourced and cached. Google AI Studio's free tier allows up to 1,000 requests/day — more than sufficient for the MVP enrichment pipeline. Context caching on repeated system prompts keeps costs at zero.
+This is where the configured LLM backend generates the content voters see. The current default is LM Studio running locally, which keeps routine enrichment off external APIs while preserving Gemini/OpenRouter as fallbacks. Every generation is sourced and cached.
 
 > *ALGORITHM: enrich_candidates.py*
 >
@@ -589,19 +589,15 @@ This is where Gemini 2.0 Flash generates the content voters see. Every generatio
 >
 > OR social_inference_text IS NOT NULL)
 >
-> 2\. Initialize Gemini client:
+> 2\. Initialize backend client (LM Studio by default):
 >
-> import google.generativeai as genai
+> from openai import OpenAI
 >
-> genai.configure(api_key=os.environ\['GOOGLE_AI_STUDIO_API_KEY'\])
+> client = OpenAI(base_url='http://localhost:1234/v1', api_key='lm-studio')
 >
-> model = genai.GenerativeModel(
+> model='local-model'  # or your configured LM Studio model id
 >
-> model_name='gemini-2.0-flash',
->
-> system_instruction=SYSTEM_PROMPT \# set once, reused across calls
->
-> )
+> system_prompt = SYSTEM_PROMPT  # reused across calls
 >
 > 3\. SYSTEM_PROMPT (set once on model init):
 >
@@ -839,7 +835,7 @@ This is the sequence that gets you to a working, publicly useful product as fast
 
 **GOAL: OFFICE EXPLAINERS AND BALLOT MEASURES READY; ALL STATIC CONTENT COMPLETE.**
 
-- Generate office explainers: for each distinct office in the offices table, run a single Gemini 2.0 Flash call with the official SBE office description as input; store result in offices.explainer_text. This is a one-time batch run (~15 offices).
+- Generate office explainers: for each distinct office in the offices table, run a single LLM call with the official SBE office description as input; store result in offices.explainer_text. This is a one-time batch run (~15 offices).
 
 - Ingest ballot measures: scrape the relevant county board pages for any measures on the 2026 ballot; populate ballot_measures table.
 
@@ -928,7 +924,7 @@ Every external dependency this platform relies on, its cost, and what breaks if 
 | U.S. Census Geocoder            | Free     | Ballot lookup broken                       | Fall back to Nominatim (OpenStreetMap) — also free                            |
 | Supabase (free tier)            | Free     | Site partly broken                         | Static pages still serve; only ballot lookup fails                            |
 | Vercel (free tier)              | Free     | Site down                                  | Rebuild deploys to CDN edge; 99.99% uptime SLA on free tier                   |
-| Google AI Studio (Gemini Flash) | Free     | No new enrichment                          | Existing cached summaries still display; pipeline queues and retries next day |
+| LM Studio (local)               | Free     | No new local enrichment while unavailable  | Start LM Studio locally or switch the run to Gemini/OpenRouter |
 | GitHub Actions                  | Free     | No pipeline runs                           | Manual script execution from local machine as backup                          |
 | Twitter API free tier           | Free     | Thin-candidate social inference incomplete | Fall back to Facebook + LinkedIn only                                         |
 | Playwright / Firecrawl free     | Free     | Website scraping broken                    | Raw text from last successful scrape persists; voters see cached content      |

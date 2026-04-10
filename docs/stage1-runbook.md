@@ -37,6 +37,8 @@ All enrichment and generation scripts accept a `--backend` flag:
 | OpenRouter | `--backend openrouter` | `OPENROUTER_API_KEY`, optionally `OPENROUTER_MODEL` | Default model: `google/gemini-2.0-flash-exp:free` |
 | LM Studio (local) | `--backend lmstudio` | optionally `LM_STUDIO_MODEL` | Requires LM Studio running at localhost:1234 |
 
+For candidate enrichment and thin-candidate social inference, LM Studio is the default path in the codebase. Gemini and OpenRouter remain available as fallbacks.
+
 ## Stage 1 execution order
 
 1. `python -m pipeline.ingest_contests`
@@ -130,15 +132,20 @@ Use `--backend openrouter` or `--backend lmstudio` to change AI backend.
 
 ---
 
-## Stage 2 — Thin Candidate Social Inference (deferred)
+## Stage 2 — Thin Candidate Social Inference
 
 551 candidates scored below 40. The next pipeline script is `scrape_social_media.py`, implementing the three-tier approach from the impl strategy (§4.5):
 
 - **Tier 1:** Follow official social links already in the DB or scraped from the candidate website.
 - **Tier 2:** Structured DuckDuckGo search (`{name} {office} {jurisdiction} Maryland 2026`) for candidates with no social links found. Facebook first, Twitter (API, 500 reads/month quota) as last resort, no LinkedIn search.
-- **Tier 3:** LLM validation gate (Gemini 2.0 Flash) — YES/NO/UNCERTAIN before storing anything. UNCERTAIN → null. False match is worse than blank.
+- **Tier 3:** LLM validation gate, using LM Studio locally by default — YES/NO/UNCERTAIN before storing anything. UNCERTAIN → null. False match is worse than blank.
 
 Run with: `python -m pipeline.scrape_social_media`
+
+Default behavior:
+- `scrape_social_media.py` defaults to `--backend lmstudio`
+- `enrich_candidates.py` also defaults to `--backend lmstudio` for the follow-up summary pass
+- Set `LM_STUDIO_MODEL` in `.env` to the model you have loaded in LM Studio
 
 ## Remaining pipeline scripts to build
 

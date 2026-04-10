@@ -94,7 +94,7 @@ SYSTEM_PROMPT = (
 # ---------------------------------------------------------------------------
 
 class AIBackend(Protocol):
-    def call(self, prompt: str) -> str: ...
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str: ...
     def sleep_between_calls(self) -> None: ...
 
 
@@ -106,11 +106,11 @@ class LMStudioBackend:
         self._client = OpenAI(base_url=LM_STUDIO_BASE_URL, api_key="lm-studio")
         log.info(f"Backend: LM Studio  model={model}  url={LM_STUDIO_BASE_URL}")
 
-    def call(self, prompt: str) -> str:
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         response = self._client.chat.completions.create(
             model=self._model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt or SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.2,
@@ -133,11 +133,11 @@ class OpenRouterBackend:
         self._client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key)
         log.info(f"Backend: OpenRouter  model={model}")
 
-    def call(self, prompt: str) -> str:
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         response = self._client.chat.completions.create(
             model=self._model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt or SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.2,
@@ -162,7 +162,16 @@ class GeminiBackend:
         )
         log.info("Backend: Gemini  model=gemini-flash-latest")
 
-    def call(self, prompt: str) -> str:
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        if system_prompt and system_prompt != SYSTEM_PROMPT:
+            import google.generativeai as genai
+            model = genai.GenerativeModel(
+                model_name="gemini-flash-latest",
+                system_instruction=system_prompt,
+            )
+            response = model.generate_content(prompt)
+            return response.text
+
         response = self._model.generate_content(prompt)
         return response.text
 
