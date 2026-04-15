@@ -1,21 +1,28 @@
 """
 ingest_sbe_candidates.py
 
-Stage 2 script — ingests 2026 Maryland local candidates from the official
-Maryland SBE candidate listing page into the candidates table.
+Stage 2 script — ingests 2026 Maryland candidates into the candidates table.
 
-SOURCE:
-    https://elections.maryland.gov/elections/2026/Primary_candidates/2026_GP_all_counties_candidatelist.html
+Sources:
+  - County/local candidates (HTML):
+    elections.maryland.gov/.../2026_GP_all_counties_candidatelist.html
+  - Statewide offices (CSV — Governor, AG, Comptroller):
+    elections.maryland.gov/.../2026_GP_statewide_candidatelist.csv
+  - State Senate (CSV):
+    elections.maryland.gov/.../2026_GP_statesenatorbydistrict_candidatelist.csv
+  - House of Delegates (CSV):
+    elections.maryland.gov/.../2026_GP_houseofdelegatesbydistrict_candidatelist.csv
+  - U.S. House (CSV):
+    elections.maryland.gov/.../2026_GP_representativeincongressbydistrict_candidatelist.csv
 
-NOTES:
-    - The current live SBE page is heading-based HTML, not a simple table.
-    - The page exposes official candidate information, but not a clear public
-      numeric candidate ID in the HTML. Until a stable official ID field is
-      confirmed in the downloadable CSV, we generate a deterministic ID from
-      official page data so repeated runs remain idempotent.
+Prerequisites:
+  - database/004_state_federal.sql must be run first (adds maryland-statewide
+    jurisdiction and state/federal office records)
 """
 
+import csv
 import hashlib
+import io
 import logging
 import os
 import re
@@ -41,6 +48,48 @@ SBE_LOCAL_CANDIDATES_URL = (
     "https://elections.maryland.gov/elections/2026/Primary_candidates/"
     "2026_GP_all_counties_candidatelist.html"
 )
+
+SBE_CSV_SOURCES = {
+    "statewide": (
+        "https://elections.maryland.gov/elections/2026/Primary_candidates/"
+        "2026_GP_statewide_candidatelist.csv"
+    ),
+    "state_senate": (
+        "https://elections.maryland.gov/elections/2026/Primary_candidates/"
+        "2026_GP_statesenatorbydistrict_candidatelist.csv"
+    ),
+    "house_of_delegates": (
+        "https://elections.maryland.gov/elections/2026/Primary_candidates/"
+        "2026_GP_houseofdelegatesbydistrict_candidatelist.csv"
+    ),
+    "us_house": (
+        "https://elections.maryland.gov/elections/2026/primary_candidates/"
+        "2026_GP_representativeincongressbydistrict_candidatelist.csv"
+    ),
+}
+
+# Maps SBE CSV "Office Name" values → normalized names used in the offices table
+CSV_OFFICE_NAME_MAP = {
+    "governor / lt. governor": "Governor",
+    "governor": "Governor",
+    "attorney general": "Attorney General",
+    "comptroller": "Comptroller",
+    "state senator": "State Senator",
+    "house of delegates": "House of Delegates Member",
+    "representative in congress": "U.S. Representative",
+    "united states senator": "U.S. Senator",
+}
+
+# Slugs must match what database/004_state_federal.sql inserts
+CSV_OFFICE_SLUG_MAP = {
+    "Governor": "governor",
+    "Attorney General": "attorney-general",
+    "Comptroller": "comptroller",
+    "State Senator": "state-senator",
+    "House of Delegates Member": "house-of-delegates-member",
+    "U.S. Representative": "us-representative",
+    "U.S. Senator": "us-senator",
+}
 
 REQUEST_TIMEOUT = 20
 REQUEST_DELAY = 1.0
@@ -153,6 +202,29 @@ def normalize_party(text: Optional[str]) -> Optional[str]:
     }
 
     return party_map.get(normalized)
+
+
+def normalize_filing_status(text: Optional[str]) -> str:
+    """
+    Map SBE status labels into the coarse statuses allowed by candidates.filing_status.
+    """
+    if not text:
+        return "Active"
+
+    cleaned = " ".join(str(text).split()).strip()
+    if not cleaned:
+        return "Active"
+
+    normalized = cleaned.lower()
+
+    if "withdraw" in normalized:
+        return "Withdrawn"
+
+    if any(token in normalized for token in ("disqual", "ineligible", "removed", "stricken")):
+        return "Disqualified"
+
+    # SBE uses more specific active-style labels such as "Seeking the Nomination".
+    return "Active"
 
 
 def parse_filed_date(text: str) -> Optional[str]:
@@ -422,7 +494,7 @@ def parse_candidate_records(soup: BeautifulSoup) -> list[CandidateRecord]:
                 continue
 
             details = extract_candidate_details(heading)
-            filing_status = str(details.get("status") or "Active")
+            filing_status = normalize_filing_status(details.get("status"))
             party = normalize_party(details.get("party"))
 
             website = details.get("website")
@@ -534,9 +606,14 @@ def upsert_candidates(supabase, records: list[CandidateRecord]) -> dict[str, int
         if existing is None:
             existing = existing_by_contest_and_name.get((contest_id, record.full_name.strip().lower()))
         if existing is None:
-            supabase.table("candidates").insert(row).execute()
-            existing_by_sbe_id[record.sbe_candidate_id] = row
-            existing_by_contest_and_name[(contest_id, record.full_name.strip().lower())] = row
+            insert_response = supabase.table("candidates").insert(row).execute()
+            inserted = (insert_response.data or [{}])[0]
+            cached_row = {
+                "id": inserted.get("id"),
+                **row,
+            }
+            existing_by_sbe_id[record.sbe_candidate_id] = cached_row
+            existing_by_contest_and_name[(contest_id, record.full_name.strip().lower())] = cached_row
             new_detected += 1
             candidates_processed += 1
             continue
@@ -560,6 +637,12 @@ def upsert_candidates(supabase, records: list[CandidateRecord]) -> dict[str, int
             supabase.table("candidates").update(row).eq(
                 "id", existing["id"]
             ).execute()
+            refreshed = {
+                **existing,
+                **row,
+            }
+            existing_by_sbe_id[record.sbe_candidate_id] = refreshed
+            existing_by_contest_and_name[(contest_id, record.full_name.strip().lower())] = refreshed
             candidates_processed += 1
 
     return {
@@ -582,16 +665,210 @@ def log_pipeline_run(supabase, summary: dict[str, int]) -> None:
     ).execute()
 
 
+# ─── CSV helpers (state / federal sources) ───────────────────────────────────
+
+def _normalize_url(raw: Optional[str]) -> Optional[str]:
+    """Add https:// prefix if a URL is missing a scheme."""
+    if not raw:
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    if raw.startswith(("http://", "https://")):
+        return raw
+    if raw.startswith("www.") or "." in raw.split("/")[0]:
+        return f"https://{raw}"
+    return None
+
+
+def fetch_csv(url: str) -> list[dict]:
+    """Download a SBE CSV and return it as a list of row dicts."""
+    resp = requests.get(
+        url,
+        timeout=REQUEST_TIMEOUT,
+        headers={"User-Agent": "MarylandIQ/1.0 (voter information platform)"},
+    )
+    resp.raise_for_status()
+    # Strip UTF-8 BOM if present
+    text = resp.content.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+    return [row for row in reader]
+
+
+def parse_csv_candidates(rows: list[dict]) -> list[CandidateRecord]:
+    """
+    Convert raw SBE CSV rows into CandidateRecord objects.
+
+    Key CSV columns used:
+      - Office Name
+      - Contest Run By District Name and Number  (e.g. "Legislative District 1A")
+      - Candidate Ballot Last Name and Suffix
+      - Candidate First Name and Middle Name
+      - Office Political Party
+      - Candidate Status
+      - Filing Type and Date                     (e.g. "Regular - 02/24/2026")
+      - Website / Facebook / X
+    """
+    records: list[CandidateRecord] = []
+
+    for row in rows:
+        raw_office = (row.get("Office Name") or "").strip()
+        office_name = CSV_OFFICE_NAME_MAP.get(raw_office.lower())
+        if not office_name:
+            log.debug("CSV: skipping unknown office %r", raw_office)
+            continue
+
+        raw_district = (row.get("Contest Run By District Name and Number") or "").strip()
+        # "State Of Maryland" means statewide — no district subdivision
+        district_name: Optional[str] = None if raw_district.lower() in (
+            "state of maryland", ""
+        ) else raw_district
+
+        last = (row.get("Candidate Ballot Last Name and Suffix") or "").strip().lstrip('"').rstrip('"')
+        first = (row.get("Candidate First Name and Middle Name") or "").strip()
+        if not last or not first:
+            continue
+        full_name = f"{first} {last}".strip()
+
+        party = normalize_party(row.get("Office Political Party"))
+        status_raw = (row.get("Candidate Status") or "Active").strip()
+        filing_status = normalize_filing_status(status_raw)
+        filed_date = parse_filed_date(row.get("Filing Type and Date") or "")
+
+        website = _normalize_url(row.get("Website"))
+        facebook_raw = row.get("Facebook") or ""
+        facebook_url = None
+        if facebook_raw.strip():
+            fb, _, _ = classify_social(
+                facebook_raw.strip() if "facebook.com" in facebook_raw.lower()
+                else f"https://facebook.com/{facebook_raw.strip()}"
+            )
+            # If classify_social didn't catch it, try direct
+            if not fb and "facebook.com" in facebook_raw.lower():
+                fb = _normalize_url(facebook_raw.strip())
+            facebook_url = fb
+
+        twitter_raw = (row.get("X") or "").strip()
+        twitter_handle = twitter_raw if twitter_raw else None
+
+        records.append(
+            CandidateRecord(
+                jurisdiction_slug="maryland-statewide",
+                office_name=office_name,
+                district_name=district_name,
+                full_name=full_name,
+                party=party,
+                filing_status=filing_status,
+                filed_date=filed_date,
+                campaign_website_url=website,
+                facebook_url=facebook_url,
+                linkedin_url=None,  # not in SBE CSV
+                twitter_handle=twitter_handle,
+                sbe_candidate_id=make_candidate_key(
+                    "maryland-statewide",
+                    office_name,
+                    district_name,
+                    full_name,
+                ),
+            )
+        )
+
+    return records
+
+
+def ensure_state_federal_contests(supabase, records: list[CandidateRecord]) -> None:
+    """
+    Create any missing contests for state/federal candidates.
+    Requires the maryland-statewide jurisdiction and relevant office records
+    to already exist (run database/004_state_federal.sql first).
+    """
+    # Load the statewide jurisdiction ID
+    result = supabase.table("jurisdictions").select("id").eq(
+        "slug", "maryland-statewide"
+    ).single().execute()
+    if not result.data:
+        log.error("maryland-statewide jurisdiction not found — run 004_state_federal.sql first")
+        return
+    jurisdiction_id = result.data["id"]
+
+    # Load all office slugs → IDs
+    office_rows = supabase.table("offices").select("id, slug").execute().data
+    slug_to_office_id = {row["slug"]: row["id"] for row in office_rows}
+
+    # Load existing contests for this jurisdiction to avoid duplicate inserts
+    existing = supabase.table("contests").select(
+        "office_id, district_name, election_type"
+    ).eq("jurisdiction_id", jurisdiction_id).execute().data
+    existing_keys = {
+        (row["office_id"], row.get("district_name") or "", row["election_type"])
+        for row in existing
+    }
+
+    seen: set[tuple] = set()
+    for rec in records:
+        office_slug = CSV_OFFICE_SLUG_MAP.get(rec.office_name)
+        if not office_slug:
+            continue
+        office_id = slug_to_office_id.get(office_slug)
+        if not office_id:
+            log.warning("Office slug %r not found in DB — skipping", office_slug)
+            continue
+
+        key = (office_id, rec.district_name or "", ELECTION_TYPE)
+        if key in existing_keys or key in seen:
+            continue
+        seen.add(key)
+
+        # Build a slug for this contest
+        parts = ["md"]
+        parts.append(office_slug)
+        if rec.district_name:
+            parts.append(slugify(rec.district_name))
+        parts.extend([ELECTION_YEAR, ELECTION_TYPE])
+        contest_slug = "-".join(parts)
+
+        supabase.table("contests").insert({
+            "slug": contest_slug,
+            "office_id": office_id,
+            "jurisdiction_id": jurisdiction_id,
+            "district_name": rec.district_name,
+            "election_date": "2026-06-23",
+            "election_type": ELECTION_TYPE,
+            "seats_available": 1,
+        }).execute()
+        log.info("Created contest: %s", contest_slug)
+
+
 def ingest_sbe_candidates() -> dict[str, int]:
     supabase = get_client()
+
+    # ── County / local candidates (HTML) ──────────────────────────────────────
     soup = fetch_candidate_page()
     time.sleep(REQUEST_DELAY)
+    county_records = parse_candidate_records(soup)
+    log.info("Parsed %d county candidate records from SBE HTML page", len(county_records))
 
-    records = parse_candidate_records(soup)
-    log.info(f"Parsed {len(records)} candidate records from SBE page")
+    # ── State / federal candidates (CSV) ──────────────────────────────────────
+    csv_records: list[CandidateRecord] = []
+    for source_name, url in SBE_CSV_SOURCES.items():
+        try:
+            rows = fetch_csv(url)
+            time.sleep(REQUEST_DELAY)
+            parsed = parse_csv_candidates(rows)
+            log.info("Parsed %d candidates from %s CSV", len(parsed), source_name)
+            csv_records.extend(parsed)
+        except Exception as exc:
+            log.error("Failed to fetch/parse %s CSV (%s): %s", source_name, url, exc)
+
+    # Ensure contests exist for every state/federal race found in the CSVs
+    if csv_records:
+        ensure_state_federal_contests(supabase, csv_records)
+
+    all_records = county_records + csv_records
+    log.info("Total records to upsert: %d", len(all_records))
 
     if os.environ.get("MARYLANDIQ_DEBUG_CANDIDATES") == "1":
-        for record in records[:DEBUG_SAMPLE_LIMIT]:
+        for record in all_records[:DEBUG_SAMPLE_LIMIT]:
             log.info(
                 "DEBUG candidate: jurisdiction=%s office=%s district=%s name=%s party=%s",
                 record.jurisdiction_slug,
@@ -601,14 +878,14 @@ def ingest_sbe_candidates() -> dict[str, int]:
                 record.party,
             )
 
-    summary = upsert_candidates(supabase, records)
+    summary = upsert_candidates(supabase, all_records)
     log_pipeline_run(supabase, summary)
     return summary
 
 
 if __name__ == "__main__":
     log.info("=== ingest_sbe_candidates.py ===")
-    log.info(f"Source: {SBE_LOCAL_CANDIDATES_URL}")
+    log.info("Sources: HTML (county) + 4 CSVs (state/federal)")
 
     try:
         summary = ingest_sbe_candidates()

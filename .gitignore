@@ -26,6 +26,9 @@ env/
 # Local caches
 .tiger_cache/
 
+# Finance CSV downloads (large SBE data files — download fresh as needed)
+docs/Finance/
+
 # IDEs and editors
 .idea/
 .vscode/

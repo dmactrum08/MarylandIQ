@@ -27,6 +27,13 @@ playwright>=1.41.0
 google-generativeai>=0.4.0
 
 # ---------------------------------------------------------------------------
+# Content extraction
+# ---------------------------------------------------------------------------
+trafilatura>=1.6.0            # Main content extraction (strips nav/footer/ads)
+                              # Used by discover_thin_candidates.py (Phase 3)
+
+# ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
 tenacity>=8.2.0               # Retry logic for network requests
+httpx>=0.27.0                 # Async HTTP (used by supabase SDK — pin to avoid StreamReset issues)

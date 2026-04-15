@@ -132,6 +132,7 @@ class PrecinctContestMapping:
     precinct_code_raw: str   # as it appears in the SBE CSV
     office_name: str
     district: str            # e.g. "4", "District 4", "04"
+    is_statewide: bool = False  # True for state/federal races under maryland-statewide
 
 
 # ---------------------------------------------------------------------------
@@ -210,9 +211,10 @@ def extract_district_mappings(
         if not office or not precinct:
             continue
 
-        # Only care about district-level county races
-        # Skip: statewide offices, federal offices, non-county races
-        if not _is_county_district_office(office):
+        is_county = _is_county_district_office(office)
+        is_state_fed = _is_state_federal_district_office(office)
+
+        if not is_county and not is_state_fed:
             continue
 
         # Skip county-wide races (no district)
@@ -229,6 +231,7 @@ def extract_district_mappings(
             precinct_code_raw=precinct,
             office_name=office,
             district=district,
+            is_statewide=is_state_fed,
         ))
 
     return mappings
@@ -244,10 +247,31 @@ COUNTY_DISTRICT_OFFICE_KEYWORDS = [
     "school board",
 ]
 
+STATE_FEDERAL_DISTRICT_OFFICE_KEYWORDS = [
+    "state senator",
+    "house of delegates",
+    "u.s. congress",
+    "representative in congress",
+    "congress",
+]
+
+# Maps CSV office names → our offices.name values for statewide contests
+STATE_FEDERAL_OFFICE_NAME_MAP = {
+    "state senator": "State Senator",
+    "house of delegates": "House of Delegates Member",
+    "u.s. congress": "U.S. Representative",
+    "representative in congress": "U.S. Representative",
+}
+
 
 def _is_county_district_office(office_name: str) -> bool:
     name = office_name.lower()
     return any(kw in name for kw in COUNTY_DISTRICT_OFFICE_KEYWORDS)
+
+
+def _is_state_federal_district_office(office_name: str) -> bool:
+    name = office_name.lower()
+    return any(kw in name for kw in STATE_FEDERAL_DISTRICT_OFFICE_KEYWORDS)
 
 
 def normalize_district(raw: str) -> str:
@@ -262,6 +286,30 @@ def normalize_district(raw: str) -> str:
     if raw.lower().startswith("district "):
         return raw[9:].strip()
     return raw
+
+
+def normalize_state_federal_district(raw: str, office_normalized: str) -> str:
+    """
+    Convert CSV district values to the district_name stored in contests.
+
+    CSV values: "08", "14", "09A"
+    contests.district_name: "Congressional District 8", "Legislative District 14",
+                            "Legislative District 9A"
+    """
+    raw = raw.strip()
+
+    # Strip leading zeros from purely numeric parts, keep letter suffixes
+    # "08" → "8", "09A" → "9A", "14" → "14"
+    match = re.match(r"^0*(\d+)([A-Za-z]*)$", raw)
+    if match:
+        number = match.group(1)
+        suffix = match.group(2).upper()
+        raw = f"{number}{suffix}"
+
+    if office_normalized == "U.S. Representative":
+        return f"Congressional District {raw}"
+    else:
+        return f"Legislative District {raw}"
 
 
 def normalize_office_name(raw: str) -> str:
@@ -405,6 +453,8 @@ def load_district_boundaries() -> dict:
     result = supabase.table("jurisdictions").select("id, slug").execute()
     jurisdiction_map: dict[str, str] = {row["slug"]: row["id"] for row in result.data}
 
+    statewide_jurisdiction_id = jurisdiction_map.get("maryland-statewide")
+
     office_rows = supabase.table("offices").select("id, name").execute().data
     office_name_by_id = {row["id"]: row["name"] for row in office_rows}
 
@@ -413,6 +463,8 @@ def load_district_boundaries() -> dict:
     ).execute().data
 
     contests_by_jurisdiction: dict[str, list[dict]] = {}
+    statewide_contest_rows: list[dict] = []
+
     for row in contest_rows:
         office_name = office_name_by_id.get(row["office_id"])
         if not office_name or not row.get("district_name"):
@@ -424,7 +476,22 @@ def load_district_boundaries() -> dict:
             "district_name": row["district_name"],
             "office_name": office_name,
         }
-        contests_by_jurisdiction.setdefault(row["jurisdiction_id"], []).append(normalized_row)
+
+        if row["jurisdiction_id"] == statewide_jurisdiction_id:
+            statewide_contest_rows.append(normalized_row)
+        else:
+            contests_by_jurisdiction.setdefault(row["jurisdiction_id"], []).append(normalized_row)
+
+    # Build a lookup for statewide district contests keyed by (office_name, district_name)
+    # district_name here is the full value: "Legislative District 14", "Congressional District 8"
+    statewide_contest_lookup: dict[tuple[str, str], str] = {}
+    for row in statewide_contest_rows:
+        statewide_contest_lookup[(row["office_name"], row["district_name"])] = row["id"]
+
+    log.info(
+        "Loaded %d statewide district contests (state senate, house of delegates, US house)",
+        len(statewide_contest_lookup),
+    )
 
     total_mappings = 0
     total_unmatched_precincts = 0
@@ -485,7 +552,20 @@ def load_district_boundaries() -> dict:
                     examples.append(mapping.precinct_code_raw)
                 continue
 
-            contest_id = find_contest_id(contest_lookup, mapping.office_name, mapping.district)
+            if mapping.is_statewide:
+                # Route to statewide contest lookup
+                office_normalized = STATE_FEDERAL_OFFICE_NAME_MAP.get(
+                    mapping.office_name.lower()
+                )
+                if not office_normalized:
+                    continue
+                district_name = normalize_state_federal_district(
+                    mapping.district, office_normalized
+                )
+                contest_id = statewide_contest_lookup.get((office_normalized, district_name))
+            else:
+                contest_id = find_contest_id(contest_lookup, mapping.office_name, mapping.district)
+
             if not contest_id:
                 log.debug(
                     f"  No contest match: {mapping.office_name} "
@@ -515,10 +595,18 @@ def load_district_boundaries() -> dict:
 
             for i in range(0, len(deduped), 500):
                 batch = deduped[i:i + 500]
-                supabase.table("precinct_contests").upsert(
-                    batch, on_conflict="precinct_id,contest_id"
-                ).execute()
-                total_mappings += len(batch)
+                for attempt in range(3):
+                    try:
+                        supabase.table("precinct_contests").upsert(
+                            batch, on_conflict="precinct_id,contest_id"
+                        ).execute()
+                        total_mappings += len(batch)
+                        break
+                    except Exception as exc:
+                        if attempt == 2:
+                            raise
+                        log.warning("  Upsert attempt %d failed: %s — retrying", attempt + 1, exc)
+                        time.sleep(2)
 
             log.info(f"  Inserted {len(deduped)} precinct_contests rows")
 
