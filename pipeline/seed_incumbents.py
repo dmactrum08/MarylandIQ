@@ -47,6 +47,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Optional
 
+import re
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -149,7 +150,6 @@ class IncumbentRecord:
 
 def normalize_name(name: str) -> str:
     """Lowercase, strip punctuation (including quotes), collapse whitespace."""
-    import re
     name = name.lower().strip()
     name = re.sub(r"""[.,\-'""\u201c\u201d]""", " ", name)  # remove all quote/punct variants
     name = re.sub(r"\s+", " ", name)
@@ -203,7 +203,6 @@ def _parse_mga_district(raw: str) -> Optional[str]:
     Returns just the number+letter token, e.g. '41', '7B', '33C'.
     The calling code adds the appropriate prefix for DB matching.
     """
-    import re
     m = re.search(r"District\s+([0-9]+[A-Za-z]?)", raw, re.IGNORECASE)
     if m:
         return m.group(1).upper()
@@ -232,26 +231,48 @@ def _district_name_variants(token: str, office_slug: str) -> list[Optional[str]]
     return [f"District {token}"]
 
 
+# Leadership titles MGA inserts between the name and the district text.
+# These appear in the cell when a member holds a chamber leadership role.
+_MGA_TITLE_PATTERNS = [
+    r"President of the Senate",
+    r"President Pro Tem",
+    r"Speaker of the House",
+    r"Speaker Pro Tem",
+    r"Majority Leader",
+    r"Majority Whip",
+    r"Minority Leader",
+    r"Minority Whip",
+    r"Speaker",
+]
+_MGA_TITLE_RE = re.compile(
+    r"\s*\b(?:" + "|".join(_MGA_TITLE_PATTERNS) + r")\b\s*",
+    re.IGNORECASE,
+)
+
+
 def _parse_mga_name(cell_text: str) -> Optional[str]:
     """
     Extract and normalize a member name from full MGA cell text.
 
-    MGA cell text looks like one of:
-      'Attar, Dalya District 41 Baltimore City Democrat'
-      'Ferguson, Brian District 8 Prince George's County Democrat'
+    MGA cell text formats:
+      Normal:    'Attar, Dalya District 41 Baltimore City Democrat'
+      Leadership:'Ferguson, Bill President of the Senate District 46 ...'
+                 'Hershey, Stephen S., Jr. Minority Leader District 36 ...'
 
     Steps:
-      1. Take everything before the first occurrence of 'District \\d'
-      2. Strip trailing comma/whitespace
+      1. Split on first 'District <digit>' to isolate the name+title portion
+      2. Strip any leadership title
       3. Convert 'Last, First [Middle]' → 'First [Middle] Last'
     """
-    import re
-    # Chop off everything from "District N..." onward
+    # 1. Everything before "District N..."
     name_part = re.split(r"\bDistrict\s+\d", cell_text, maxsplit=1)[0].strip().rstrip(",").strip()
     if not name_part:
         return None
 
-    # Handle "Last, First" or "Last, First Middle"
+    # 2. Remove leadership title if present
+    name_part = _MGA_TITLE_RE.sub(" ", name_part).strip()
+
+    # 3. "Last, First [Middle [Suffix]]" → "First [Middle [Suffix]] Last"
     if "," in name_part:
         last, _, rest = name_part.partition(",")
         first_parts = rest.strip()
@@ -439,7 +460,7 @@ def find_match(
 # Main
 # ---------------------------------------------------------------------------
 
-def run(apply: bool, threshold: float, debug_pool: Optional[str] = None) -> None:
+def run(apply: bool, threshold: float, debug_pool: Optional[str] = None, debug_mga: bool = False) -> None:
     supabase = get_client()
 
     # ── 1. Collect all incumbent records ─────────────────────────────────────
@@ -457,8 +478,7 @@ def run(apply: bool, threshold: float, debug_pool: Optional[str] = None) -> None
         # Attach district variants for fallback matching
         d = entry.get("district_name")
         if d:
-            import re as _re
-            m = _re.search(r"(\d+[A-Za-z]?)$", d)
+            m = re.search(r"(\d+[A-Za-z]?)$", d)
             if m:
                 rec.__dict__["_district_variants"] = _district_name_variants(
                     m.group(1).upper(), entry["office_slug"]
@@ -481,6 +501,17 @@ def run(apply: bool, threshold: float, debug_pool: Optional[str] = None) -> None
     all_incumbents.extend(county_records)
 
     log.info("Total incumbent records to match: %d", len(all_incumbents))
+
+    # Debug: dump the raw names+districts parsed from MGA to verify parsing.
+    if debug_mga:
+        mga_records = [r for r in all_incumbents if r.source in ("mga_senate", "mga_house")]
+        log.info("\n--- DEBUG MGA (%d records) ---", len(mga_records))
+        for r in mga_records:
+            variants = r.__dict__.get("_district_variants", [r.district_name])
+            log.info("  [%s] %-40s  district=%r  variants=%s",
+                     r.source, r.full_name, r.district_name, variants)
+        log.info("--- END DEBUG MGA ---\n")
+        return
 
     # ── 2. Load candidate index ───────────────────────────────────────────────
     candidate_index = load_candidate_index(supabase)
@@ -592,11 +623,17 @@ if __name__ == "__main__":
             "Example: --debug-pool state-senator"
         ),
     )
+    parser.add_argument(
+        "--debug-mga",
+        action="store_true",
+        default=False,
+        help="Print every name+district parsed from MGA pages and exit, without touching the DB.",
+    )
     args = parser.parse_args()
 
     log.info("=== seed_incumbents.py (apply=%s, threshold=%.2f) ===", args.apply, args.threshold)
     try:
-        run(apply=args.apply, threshold=args.threshold, debug_pool=args.debug_pool)
+        run(apply=args.apply, threshold=args.threshold, debug_pool=args.debug_pool, debug_mga=args.debug_mga)
         log.info("Done.")
         sys.exit(0)
     except Exception as e:
