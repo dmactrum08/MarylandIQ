@@ -80,6 +80,7 @@ export interface Candidate {
   facebook_url: string | null;
   twitter_handle: string | null;
   linkedin_url: string | null;
+  is_incumbent: boolean;
   completeness_score: number; // 0–100
   last_scraped_at: string | null;
   withdrawn_detected_at: string | null;

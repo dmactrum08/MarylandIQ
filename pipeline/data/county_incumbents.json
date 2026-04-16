@@ -1,0 +1,17 @@
+{
+  "_instructions": "Add one entry per incumbent. 'office_slug' must match a slug in your offices table (e.g. 'county-executive', 'county-council-member', 'sheriff', 'states-attorney', 'board-of-education', etc.). 'district_name' should match the district_name in your contests table exactly, or null for county-wide offices. 'jurisdiction_slug' must match a slug in your jurisdictions table.",
+  "incumbents": [
+    {
+      "full_name": "Jane Smith",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "John Doe",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 3"
+    }
+  ]
+}

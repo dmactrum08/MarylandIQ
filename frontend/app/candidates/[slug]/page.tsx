@@ -342,7 +342,7 @@ export default async function CandidatePage({
                 <dl className="divide-y divide-gray-100">
                   <div className="flex items-start gap-2 px-4 py-3">
                     <dt className="text-xs text-[#94a3b8] w-24 shrink-0 mt-0.5">Status</dt>
-                    <dd>
+                    <dd className="flex items-center gap-2 flex-wrap">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
                         isWithdrawn
                           ? "bg-amber-100 text-amber-800"
@@ -350,6 +350,11 @@ export default async function CandidatePage({
                       }`}>
                         {candidate.filing_status}
                       </span>
+                      {candidate.is_incumbent && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-white">
+                          Incumbent
+                        </span>
+                      )}
                     </dd>
                   </div>
                   {candidate.party && (

@@ -142,6 +142,11 @@ function CandidateCard({ candidate }: { candidate: CandidateWithEnrichment }) {
               >
                 {candidate.full_name}
               </a>
+              {candidate.is_incumbent && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-white">
+                  Incumbent
+                </span>
+              )}
               {isWithdrawn && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
                   {candidate.filing_status}
