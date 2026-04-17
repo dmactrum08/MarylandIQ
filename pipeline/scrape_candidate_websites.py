@@ -381,18 +381,25 @@ def fetch_targets(supabase, force: bool = False, candidate_filter: Optional[str]
         enrichment = enrichment_by_candidate.get(row["id"]) or {}
         news_urls = row.get("news_article_urls") or []
 
+        has_website = bool(row.get("campaign_website_url"))
         website_done = (
-            enrichment.get("website_scraped_at")
+            has_website
+            and enrichment.get("website_scraped_at")
             and not enrichment.get("scrape_error")
-            and row.get("campaign_website_url")
         )
-        news_done = not news_urls or bool(enrichment.get("news_scraped_at"))
+        news_done = (
+            not news_urls
+            or (enrichment.get("news_scraped_at") and not enrichment.get("news_scrape_error"))
+        )
 
-        if not force and website_done and news_done:
-            continue
+        if not force:
+            website_needed = has_website and not website_done
+            news_needed = bool(news_urls) and not news_done
+            if not website_needed and not news_needed:
+                continue
 
         # Skip candidates with no website and no news articles
-        if not row.get("campaign_website_url") and not news_urls:
+        if not has_website and not news_urls:
             continue
 
         targets.append(
@@ -489,12 +496,20 @@ def scrape_candidate_websites(
 
             if result.scrape_error:
                 errors += 1
-                log.warning(f"Scrape issue for {target.full_name}: {result.notes}")
-            else:
-                text_length = len(result.text or "")
-                log.info(
-                    f"Scraped {target.full_name} — {result.notes}, {text_length} chars"
-                )
+                log.warning(f"Website scrape issue for {target.full_name}: {result.notes}")
+            if result.news_scrape_error:
+                errors += 1
+                log.warning(f"News scrape issue for {target.full_name}")
+
+            website_chars = len(result.text or "")
+            news_chars = len(result.news_text or "")
+            parts = []
+            if result.text is not None or result.scrape_error:
+                parts.append(f"website={website_chars} chars")
+            if result.news_text is not None or result.news_scrape_error:
+                parts.append(f"news={news_chars} chars")
+            if parts:
+                log.info(f"Scraped {target.full_name} — {', '.join(parts)}")
 
     log_pipeline_run(supabase, processed, errors)
     return {"candidates_processed": processed, "errors": errors}
