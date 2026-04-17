@@ -19,7 +19,7 @@ export default function Home() {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
             {/* Left: Headline + CTAs */}
-            <div>
+            <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
               {/* Cycle badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-6 border border-[#F5A623]/40 text-[#F5A623] bg-[#F5A623]/10">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F5A623] inline-block" aria-hidden="true" />
@@ -34,14 +34,14 @@ export default function Home() {
                 <span className="text-[#F5A623]">Know your candidates.</span>
               </h1>
 
-              <p className="text-lg text-slate-300 leading-relaxed mb-8 max-w-lg">
+              <p className="text-lg text-slate-300 leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0">
                 Free, sourced voter research for Maryland local elections — school board,
                 county council, sheriff, and more. Find any candidate, any county.
                 No account required.
               </p>
 
               {/* CTAs */}
-              <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex flex-wrap gap-3 mb-6 justify-center lg:justify-start">
                 <a
                   href="/ballot"
                   className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-[#CC0000] hover:bg-[#AA0000] rounded-lg transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#0F172A]"
@@ -64,7 +64,7 @@ export default function Home() {
               </div>
 
               {/* Trust micro-line */}
-              <p className="text-sm text-slate-400 flex items-center gap-1.5">
+              <p className="text-sm text-slate-400 flex items-center gap-1.5 justify-center lg:justify-start">
                 <svg className="w-3.5 h-3.5 text-[#F5A623] shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fillRule="evenodd" d="M10 1a.75.75 0 01.671.415l2.293 4.644 5.122.744a.75.75 0 01.416 1.279l-3.708 3.613.876 5.102a.75.75 0 01-1.088.791L10 15.347l-4.583 2.41a.75.75 0 01-1.088-.791l.875-5.102L1.498 8.082a.75.75 0 01.416-1.279l5.122-.744L9.33 1.415A.75.75 0 0110 1z" clipRule="evenodd" />
                 </svg>
@@ -73,7 +73,7 @@ export default function Home() {
             </div>
 
             {/* Right: Ballot lookup card */}
-            <div className="lg:justify-self-end w-full max-w-md 2xl:max-w-lg">
+            <div className="lg:justify-self-end w-full max-w-md 2xl:max-w-lg mx-auto lg:mx-0">
               <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-1">
                   <svg className="w-5 h-5 text-[#CC0000] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
@@ -177,7 +177,7 @@ export default function Home() {
       ══════════════════════════════════════════ */}
       <section aria-labelledby="county-heading" className="bg-white border-b border-gray-200">
         <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
-          <div className="mb-8">
+          <div className="mb-8 text-center sm:text-left">
             <h2 id="county-heading" className="text-2xl font-bold text-[#0F172A] mb-1">
               Browse by county
             </h2>
@@ -220,8 +220,8 @@ export default function Home() {
       ══════════════════════════════════════════ */}
       <section aria-labelledby="office-heading" className="bg-[#F8FAFC] border-b border-gray-200">
         <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-6">
+            <div className="text-center sm:text-left">
               <h2 id="office-heading" className="text-2xl font-bold text-[#0F172A] mb-1">
                 Browse by office type
               </h2>
@@ -231,7 +231,7 @@ export default function Home() {
             </div>
             <a
               href="/offices"
-              className="shrink-0 text-sm font-medium text-[#CC0000] hover:underline focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:rounded mt-1"
+              className="shrink-0 text-sm font-medium text-[#CC0000] hover:underline focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:rounded sm:mt-1 text-center sm:text-left"
             >
               See all {MD_OFFICES.length} →
             </a>
@@ -312,13 +312,13 @@ export default function Home() {
       ══════════════════════════════════════════ */}
       <section aria-labelledby="trust-heading" className="bg-[#FFFBEB] border-b border-[#F5A623]/30">
         <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          <div className="flex flex-col items-center sm:flex-row sm:items-center gap-6">
             <div className="shrink-0 w-12 h-12 rounded-xl bg-[#F5A623]/20 flex items-center justify-center" aria-hidden="true">
               <svg className="w-6 h-6 text-[#B45309]" fill="none" viewBox="0 0 24 24" strokeWidth="1.75" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
               </svg>
             </div>
-            <div>
+            <div className="text-center sm:text-left">
               <h2 id="trust-heading" className="text-base font-semibold text-[#78350F] mb-1">
                 Independent, nonpartisan, and free.
               </h2>
@@ -328,7 +328,7 @@ export default function Home() {
                 Every inference is labeled. Official data always takes precedence over AI output.
               </p>
             </div>
-            <div className="shrink-0 sm:ml-auto flex flex-col sm:items-end gap-3">
+            <div className="shrink-0 sm:ml-auto flex flex-col items-center sm:items-end gap-3">
               <a
                 href="/about"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#92400E] hover:text-[#78350F] underline underline-offset-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 focus:rounded"

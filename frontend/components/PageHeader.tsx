@@ -62,15 +62,15 @@ export default function PageHeader({
           </nav>
         )}
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="text-center sm:text-left">
             <h1 className="text-3xl font-bold text-white mb-2">{title}</h1>
             {subtitle && (
-              <p className="text-slate-300 max-w-xl">{subtitle}</p>
+              <p className="text-slate-300 max-w-xl mx-auto sm:mx-0">{subtitle}</p>
             )}
           </div>
           {badge && (
-            <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-[#F5A623]/10 text-[#F5A623] border border-[#F5A623]/40 mt-1">
+            <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-[#F5A623]/10 text-[#F5A623] border border-[#F5A623]/40 mx-auto sm:mx-0 sm:mt-1">
               {badge}
             </span>
           )}
