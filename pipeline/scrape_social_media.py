@@ -119,7 +119,8 @@ def fetch_thin_candidates(
         "id, full_name, facebook_url, twitter_handle, linkedin_url, "
         "instagram_url, threads_url, "
         "contests(offices(name), jurisdictions(name)), "
-        "candidate_enrichment(social_scraped_at, social_inference_text, news_article_urls)"
+        "news_article_urls, "
+        "candidate_enrichment(social_scraped_at, social_inference_text)"
     )
     if not force:
         query = query.lt("completeness_score", THIN_THRESHOLD)
@@ -166,7 +167,7 @@ def fetch_thin_candidates(
                 linkedin_url=c.get("linkedin_url"),
                 instagram_url=c.get("instagram_url"),
                 threads_url=c.get("threads_url"),
-                news_article_urls=enr.get("news_article_urls") or [],
+                news_article_urls=c.get("news_article_urls") or [],
             )
         )
 

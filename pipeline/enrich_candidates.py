@@ -204,6 +204,7 @@ class EnrichmentTarget:
     campaign_website_url: Optional[str]
     scraped_website_text: Optional[str]
     social_inference_text: Optional[str]
+    scraped_news_text: Optional[str]
     news_article_urls: list
 
 
@@ -218,65 +219,22 @@ def _truncate(text: str, max_chars: int) -> str:
     return text[:max_chars] + "\n[...truncated]"
 
 
-def _scrape_article(url: str, max_chars: int = 2000) -> Optional[str]:
-    """Fetch plain text from a news article URL. Returns None on failure or login wall."""
-    import re
-    from html import unescape as _unescape
-    from bs4 import BeautifulSoup
-
-    LOGIN_SIGNALS = ["subscribe to read", "sign in to read", "create a free account", "paywall"]
-    try:
-        resp = requests.get(url, timeout=8, headers={"User-Agent": "MarylandIQ/1.0"}, allow_redirects=True)
-        resp.raise_for_status()
-    except Exception:
-        return None
-
-    soup = BeautifulSoup(resp.text, "lxml")
-    for tag in soup(["script", "style", "noscript"]):
-        tag.decompose()
-
-    # Prefer article/main content nodes
-    content = None
-    for sel in ["article", "main", ".article-body", ".story-body", ".entry-content", ".post-content"]:
-        node = soup.select_one(sel)
-        if node:
-            content = node.get_text(" ", strip=True)
-            break
-    if not content:
-        content = soup.get_text(" ", strip=True)
-
-    text = _unescape(" ".join(content.split()))
-    if not text or len(text) < 100:
-        return None
-    if any(signal in text.lower() for signal in LOGIN_SIGNALS):
-        return None
-    return text[:max_chars]
-
-
-MAX_ARTICLES_TO_SCRAPE = 3
-MAX_ARTICLE_CHARS = 2000    # per article
-MAX_WEBSITE_CHARS = 12000   # website can be large; use as much as possible
-MAX_SOCIAL_CHARS = 3000     # social posts and profiles
+MAX_WEBSITE_CHARS = 12000
+MAX_SOCIAL_CHARS = 3000
+MAX_NEWS_CHARS = 8000
 
 
 def build_user_prompt(target: EnrichmentTarget) -> str:
     sources: list[str] = []
     if target.campaign_website_url:
         sources.append(target.campaign_website_url)
-
-    website_text = _truncate(target.scraped_website_text or "none", MAX_WEBSITE_CHARS)
-    social_text = _truncate(target.social_inference_text or "none", MAX_SOCIAL_CHARS)
-
-    # Scrape up to MAX_ARTICLES_TO_SCRAPE news articles for additional context
-    article_sections: list[str] = []
-    for url in (target.news_article_urls or [])[:MAX_ARTICLES_TO_SCRAPE]:
-        text = _scrape_article(url, max_chars=MAX_ARTICLE_CHARS)
-        if text:
-            article_sections.append(f"Source: {url}\n{text}")
-            sources.append(url)
+    for url in (target.news_article_urls or []):
+        sources.append(url)
 
     source_line = ", ".join(sources) if sources else "none"
-    article_block = "\n\n".join(article_sections) if article_sections else "none"
+    website_text = _truncate(target.scraped_website_text or "none", MAX_WEBSITE_CHARS)
+    social_text = _truncate(target.social_inference_text or "none", MAX_SOCIAL_CHARS)
+    article_block = _truncate(target.scraped_news_text or "none", MAX_NEWS_CHARS)
 
     approved_tags = ", ".join(APPROVED_ISSUE_TAGS)
 
@@ -344,52 +302,72 @@ def validate_tags(tags: list) -> list[str]:
 # DB helpers
 # ---------------------------------------------------------------------------
 
-def fetch_targets(supabase) -> list[EnrichmentTarget]:
-    """Return candidates that need enrichment (no AI output yet or stale version)."""
-    rows = (
-        supabase.table("candidate_enrichment")
-        .select(
-            "candidate_id, scraped_website_text, social_inference_text, "
-            "news_article_urls, ai_generated_at, enrichment_version"
-        )
-        .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
-        .not_.is_("scraped_website_text", "null")
-        .execute()
-        .data
+def fetch_targets(supabase, force_name: Optional[str] = None) -> list[EnrichmentTarget]:
+    """Return candidates that need enrichment (no AI output yet or stale version).
+
+    If force_name is given, return that candidate regardless of enrichment status
+    (case-insensitive substring match on full_name).
+    """
+    ENRICHMENT_COLS = (
+        "candidate_id, scraped_website_text, social_inference_text, "
+        "scraped_news_text, ai_generated_at, enrichment_version"
     )
 
-    # Also include rows where only social_inference_text is set
-    rows_social = (
-        supabase.table("candidate_enrichment")
-        .select(
-            "candidate_id, scraped_website_text, social_inference_text, "
-            "news_article_urls, ai_generated_at, enrichment_version"
+    if force_name:
+        # Find the candidate by name first
+        cand_rows = (
+            supabase.table("candidates")
+            .select("id")
+            .ilike("full_name", f"%{force_name}%")
+            .execute()
+            .data
         )
-        .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
-        .is_("scraped_website_text", "null")
-        .not_.is_("social_inference_text", "null")
-        .execute()
-        .data
-    )
-
-    # Also include rows that have only news_article_urls (no website or social text yet)
-    rows_articles = (
-        supabase.table("candidate_enrichment")
-        .select(
-            "candidate_id, scraped_website_text, social_inference_text, "
-            "news_article_urls, ai_generated_at, enrichment_version"
+        if not cand_rows:
+            log.warning(f"No candidate found matching {force_name!r}")
+            return []
+        forced_ids = [r["id"] for r in cand_rows]
+        all_rows = (
+            supabase.table("candidate_enrichment")
+            .select(ENRICHMENT_COLS)
+            .in_("candidate_id", forced_ids)
+            .execute()
+            .data
         )
-        .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
-        .is_("scraped_website_text", "null")
-        .is_("social_inference_text", "null")
-        .not_.is_("news_article_urls", "null")
-        .execute()
-        .data
-    )
-    # Filter to only rows that actually have articles (not just an empty array)
-    rows_articles = [r for r in rows_articles if r.get("news_article_urls")]
+    else:
+        rows = (
+            supabase.table("candidate_enrichment")
+            .select(ENRICHMENT_COLS)
+            .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
+            .not_.is_("scraped_website_text", "null")
+            .execute()
+            .data
+        )
 
-    all_rows = rows + rows_social + rows_articles
+        # Also include rows where only social_inference_text is set
+        rows_social = (
+            supabase.table("candidate_enrichment")
+            .select(ENRICHMENT_COLS)
+            .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
+            .is_("scraped_website_text", "null")
+            .not_.is_("social_inference_text", "null")
+            .execute()
+            .data
+        )
+
+        # Also include rows that have scraped_news_text but no website or social text
+        rows_articles = (
+            supabase.table("candidate_enrichment")
+            .select(ENRICHMENT_COLS)
+            .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
+            .is_("scraped_website_text", "null")
+            .is_("social_inference_text", "null")
+            .not_.is_("scraped_news_text", "null")
+            .execute()
+            .data
+        )
+
+        all_rows = rows + rows_social + rows_articles
+
     candidate_ids = [r["candidate_id"] for r in all_rows]
 
     if not candidate_ids:
@@ -405,7 +383,7 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
         candidates += (
             supabase.table("candidates")
             .select(
-                "id, full_name, campaign_website_url, "
+                "id, full_name, campaign_website_url, news_article_urls, "
                 "contest_id, contests(office_id, offices(name), "
                 "jurisdiction_id, jurisdictions(name))"
             )
@@ -433,7 +411,8 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
                 campaign_website_url=cand.get("campaign_website_url"),
                 scraped_website_text=enrichment.get("scraped_website_text"),
                 social_inference_text=enrichment.get("social_inference_text"),
-                news_article_urls=enrichment.get("news_article_urls") or [],
+                scraped_news_text=enrichment.get("scraped_news_text"),
+                news_article_urls=cand.get("news_article_urls") or [],
             )
         )
 
@@ -492,11 +471,14 @@ def persist_result(supabase, target: EnrichmentTarget, parsed: dict) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-def enrich_candidates(backend_name: str = "lmstudio") -> dict[str, int]:
+def enrich_candidates(backend_name: str = "lmstudio", candidate_filter: Optional[str] = None) -> dict[str, int]:
     backend = make_backend(backend_name)
     supabase = get_client()
-    targets = fetch_targets(supabase)
-    log.info(f"Found {len(targets)} candidates needing enrichment")
+    targets = fetch_targets(supabase, force_name=candidate_filter)
+    if candidate_filter:
+        log.info(f"Targeting candidate matching {candidate_filter!r} ({len(targets)} found)")
+    else:
+        log.info(f"Found {len(targets)} candidates needing enrichment")
 
     processed = 0
     errors = 0
@@ -555,11 +537,18 @@ if __name__ == "__main__":
         default="lmstudio",
         help="AI backend to use (default: lmstudio)",
     )
+    parser.add_argument(
+        "--candidate",
+        metavar="NAME",
+        default=None,
+        help="Enrich a single candidate by name (case-insensitive substring match). "
+             "Ignores whether they have already been enriched. Example: --candidate lukas",
+    )
     args = parser.parse_args()
 
     log.info(f"=== enrich_candidates.py  backend={args.backend} ===")
     try:
-        result = enrich_candidates(backend_name=args.backend)
+        result = enrich_candidates(backend_name=args.backend, candidate_filter=args.candidate)
         log.info(f"Done. {result}")
         sys.exit(0)
     except Exception as exc:

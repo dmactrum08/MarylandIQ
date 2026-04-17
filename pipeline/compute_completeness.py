@@ -100,7 +100,8 @@ def fetch_candidates(supabase) -> list[CandidateRow]:
             "id, full_name, party, filing_status, filed_date, "
             "campaign_website_url, facebook_url, twitter_handle, linkedin_url, "
             "instagram_url, threads_url, "
-            "candidate_enrichment(scraped_website_text, ai_summary, issue_tags, news_article_urls)"
+            "news_article_urls, "
+            "candidate_enrichment(scraped_website_text, ai_summary, issue_tags)"
         )
         .execute()
         .data
@@ -130,7 +131,7 @@ def fetch_candidates(supabase) -> list[CandidateRow]:
                 scraped_website_text=enr.get("scraped_website_text"),
                 ai_summary=enr.get("ai_summary"),
                 issue_tags=enr.get("issue_tags") or [],
-                news_article_urls=enr.get("news_article_urls") or [],
+                news_article_urls=c.get("news_article_urls") or [],
             )
         )
 

@@ -82,6 +82,7 @@ export interface Candidate {
   linkedin_url: string | null;
   is_incumbent: boolean;
   completeness_score: number; // 0–100
+  news_article_urls: string[];
   last_scraped_at: string | null;
   withdrawn_detected_at: string | null;
 }

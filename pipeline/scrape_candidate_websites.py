@@ -75,11 +75,21 @@ ROBOTS_CACHE: dict[str, Optional[RobotFileParser]] = {}
 ROBOTS_LOCK = threading.Lock()
 
 
+MAX_ARTICLE_CHARS = 2000   # per article, before concatenation
+MAX_ARTICLES = 5           # max articles to scrape per candidate
+
+LOGIN_SIGNALS = [
+    "subscribe to read", "sign in to read",
+    "create a free account", "paywall", "subscribers only",
+]
+
+
 @dataclass
 class CandidateWebsiteTarget:
     id: str
     full_name: str
     campaign_website_url: str
+    news_article_urls: list[str]
 
 
 @dataclass
@@ -89,6 +99,8 @@ class ScrapeResult:
     text: Optional[str]
     scrape_error: bool
     notes: str
+    news_text: Optional[str] = None
+    news_scrape_error: bool = False
 
 
 def normalize_whitespace(text: str) -> str:
@@ -265,48 +277,127 @@ def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
     return combined, "crawl", pages_scraped
 
 
-def scrape_one(target: CandidateWebsiteTarget) -> ScrapeResult:
-    url = target.campaign_website_url.strip()
-    if not url:
-        return ScrapeResult(target.id, None, None, True, "empty_url")
+def scrape_article(url: str) -> Optional[str]:
+    """Fetch plain text from a single news article URL. Returns None on failure or paywall."""
+    try:
+        resp = requests.get(
+            url, timeout=FAST_PATH_TIMEOUT,
+            headers={"User-Agent": USER_AGENT},
+            allow_redirects=True,
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        log.debug("Article fetch failed for %s: %s", url, exc)
+        return None
 
-    text, method, pages = crawl_domain(url)
-    if text and len(text) >= MIN_TEXT_LENGTH:
-        return ScrapeResult(target.id, method, text, False, f"pages={pages}")
+    soup = BeautifulSoup(resp.text, "lxml")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
 
-    return ScrapeResult(target.id, None, None, True, f"no_content_after_crawl pages={pages}")
+    content: Optional[str] = None
+    for sel in ["article", "main", ".article-body", ".story-body", ".entry-content", ".post-content"]:
+        node = soup.select_one(sel)
+        if node:
+            content = normalize_whitespace(node.get_text(" ", strip=True))
+            break
+    if not content and soup.body:
+        content = normalize_whitespace(soup.body.get_text(" ", strip=True))
+
+    if not content or len(content) < 100:
+        return None
+    if any(signal in content.lower() for signal in LOGIN_SIGNALS):
+        log.debug("Paywall detected at %s", url)
+        return None
+
+    return content[:MAX_ARTICLE_CHARS]
+
+
+def scrape_articles(urls: list[str]) -> tuple[Optional[str], bool]:
+    """Scrape up to MAX_ARTICLES URLs and return (concatenated_text, any_error)."""
+    if not urls:
+        return None, False
+
+    sections: list[str] = []
+    any_error = False
+    for url in urls[:MAX_ARTICLES]:
+        text = scrape_article(url)
+        if text:
+            sections.append(f"Source: {url}\n{text}")
+        else:
+            any_error = True
+
+    return ("\n\n".join(sections) if sections else None), any_error
+
+
+def scrape_one(
+    target: CandidateWebsiteTarget,
+    scrape_websites: bool = True,
+    scrape_news: bool = True,
+) -> ScrapeResult:
+    result = ScrapeResult(
+        candidate_id=target.id,
+        method=None,
+        text=None,
+        scrape_error=False,
+        notes="",
+    )
+
+    if scrape_websites:
+        url = target.campaign_website_url.strip()
+        if not url:
+            result.scrape_error = True
+            result.notes = "empty_url"
+        else:
+            text, method, pages = crawl_domain(url)
+            website_ok = bool(text and len(text) >= MIN_TEXT_LENGTH)
+            result.method = method
+            result.text = text if website_ok else None
+            result.scrape_error = not website_ok
+            result.notes = f"pages={pages}"
+
+    if scrape_news:
+        news_text, news_error = scrape_articles(target.news_article_urls)
+        result.news_text = news_text
+        result.news_scrape_error = news_error
+
+    return result
 
 
 def fetch_targets(supabase, force: bool = False) -> list[CandidateWebsiteTarget]:
     candidates = supabase.table("candidates").select(
-        "id, full_name, campaign_website_url"
-    ).not_.is_("campaign_website_url", "null").execute().data
-
-    if force:
-        return [
-            CandidateWebsiteTarget(
-                id=row["id"],
-                full_name=row["full_name"],
-                campaign_website_url=row["campaign_website_url"],
-            )
-            for row in candidates
-        ]
+        "id, full_name, campaign_website_url, news_article_urls"
+    ).execute().data
 
     enrichment_rows = supabase.table("candidate_enrichment").select(
-        "candidate_id, website_scraped_at, scrape_error"
+        "candidate_id, website_scraped_at, scrape_error, news_scraped_at"
     ).execute().data
     enrichment_by_candidate = {row["candidate_id"]: row for row in enrichment_rows}
 
     targets: list[CandidateWebsiteTarget] = []
     for row in candidates:
-        enrichment = enrichment_by_candidate.get(row["id"])
-        if enrichment and enrichment.get("website_scraped_at") and not enrichment.get("scrape_error"):
+        enrichment = enrichment_by_candidate.get(row["id"]) or {}
+        news_urls = row.get("news_article_urls") or []
+
+        website_done = (
+            enrichment.get("website_scraped_at")
+            and not enrichment.get("scrape_error")
+            and row.get("campaign_website_url")
+        )
+        news_done = not news_urls or bool(enrichment.get("news_scraped_at"))
+
+        if not force and website_done and news_done:
             continue
+
+        # Skip candidates with no website and no news articles
+        if not row.get("campaign_website_url") and not news_urls:
+            continue
+
         targets.append(
             CandidateWebsiteTarget(
                 id=row["id"],
                 full_name=row["full_name"],
-                campaign_website_url=row["campaign_website_url"],
+                campaign_website_url=row.get("campaign_website_url") or "",
+                news_article_urls=news_urls,
             )
         )
 
@@ -316,15 +407,25 @@ def fetch_targets(supabase, force: bool = False) -> list[CandidateWebsiteTarget]
 def persist_result(supabase, result: ScrapeResult) -> None:
     now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    supabase.table("candidate_enrichment").upsert(
-        {
-            "candidate_id": result.candidate_id,
+    payload: dict = {"candidate_id": result.candidate_id}
+
+    if result.text is not None or result.scrape_error:
+        payload.update({
             "scraped_website_text": result.text,
             "scrape_method": result.method,
             "scrape_error": result.scrape_error,
             "website_scraped_at": now_iso,
-        },
-        on_conflict="candidate_id",
+        })
+
+    if result.news_text is not None or result.news_scrape_error:
+        payload.update({
+            "scraped_news_text": result.news_text,
+            "news_scrape_error": result.news_scrape_error,
+            "news_scraped_at": now_iso,
+        })
+
+    supabase.table("candidate_enrichment").upsert(
+        payload, on_conflict="candidate_id"
     ).execute()
 
     supabase.table("candidates").update(
@@ -342,16 +443,24 @@ def log_pipeline_run(supabase, processed: int, errors: int) -> None:
     ).execute()
 
 
-def scrape_candidate_websites(force: bool = False) -> dict[str, int]:
+def scrape_candidate_websites(
+    force: bool = False,
+    scrape_websites: bool = True,
+    scrape_news: bool = True,
+) -> dict[str, int]:
     supabase = get_client()
     targets = fetch_targets(supabase, force=force)
-    log.info(f"Found {len(targets)} candidate websites to scrape")
+    mode = "websites+news" if (scrape_websites and scrape_news) else ("websites" if scrape_websites else "news")
+    log.info(f"Found {len(targets)} targets to scrape  mode={mode}")
 
     processed = 0
     errors = 0
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_map = {executor.submit(scrape_one, target): target for target in targets}
+        future_map = {
+            executor.submit(scrape_one, target, scrape_websites, scrape_news): target
+            for target in targets
+        }
 
         for future in concurrent.futures.as_completed(future_map):
             target = future_map[future]
@@ -385,17 +494,31 @@ def scrape_candidate_websites(force: bool = False) -> dict[str, int]:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Scrape candidate campaign websites.")
+    parser = argparse.ArgumentParser(description="Scrape candidate campaign websites and/or news articles.")
     parser.add_argument(
         "--force",
         action="store_true",
         help="Re-scrape all candidates, including those already scraped successfully.",
     )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--websites-only",
+        action="store_true",
+        help="Only crawl campaign websites; skip news articles.",
+    )
+    mode.add_argument(
+        "--news-only",
+        action="store_true",
+        help="Only scrape news article URLs; skip campaign websites.",
+    )
     args = parser.parse_args()
 
-    log.info(f"=== scrape_candidate_websites.py  force={args.force} ===")
+    scrape_websites = not args.news_only
+    scrape_news = not args.websites_only
+
+    log.info(f"=== scrape_candidate_websites.py  force={args.force}  websites={scrape_websites}  news={scrape_news} ===")
     try:
-        summary = scrape_candidate_websites(force=args.force)
+        summary = scrape_candidate_websites(force=args.force, scrape_websites=scrape_websites, scrape_news=scrape_news)
         log.info(f"Done. Summary: {summary}")
         sys.exit(0)
     except Exception as exc:

@@ -72,10 +72,11 @@ export async function GET(
         office:offices!inner(name, slug, explainer_text),
         jurisdiction:jurisdictions!inner(name, slug)
       ),
+      news_article_urls,
       enrichment:candidate_enrichment(
         ai_summary, campaign_voice, news_summary,
         policy_priorities, issue_tags, issue_tag_sources,
-        enrichment_confidence, news_article_urls
+        enrichment_confidence
       )
       `
     )
@@ -134,7 +135,7 @@ export async function GET(
     issue_tags: enr?.issue_tags ?? [],
     issue_tag_sources: enr?.issue_tag_sources ?? [],
     enrichment_confidence: enr?.enrichment_confidence ?? null,
-    news_article_urls: enr?.news_article_urls ?? [],
+    news_article_urls: (data as any).news_article_urls ?? [],
   };
 
   return NextResponse.json(result, {

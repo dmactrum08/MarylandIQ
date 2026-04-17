@@ -186,7 +186,7 @@ export default async function CandidatePage({
   const hasCampaignVoice = !!(enrichment as any)?.campaign_voice;
   const hasNewsSummary = !!(enrichment as any)?.news_summary;
   const policyPriorities: PolicyPriority[] = (enrichment as any)?.policy_priorities ?? [];
-  const newsArticleUrls: string[] = (enrichment as any)?.news_article_urls ?? [];
+  const newsArticleUrls: string[] = candidate.news_article_urls ?? [];
   const hasIssueTags = (enrichment?.issue_tags ?? []).length > 0;
   const hasSocialInference = !!enrichment?.inferred_from_social && !!enrichment?.social_inference_text;
   const isWithdrawn = candidate.filing_status !== "Active";

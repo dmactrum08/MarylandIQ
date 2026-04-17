@@ -124,32 +124,26 @@ def fetch_candidates(supabase, ids: list[str]) -> dict[str, dict]:
 
 
 def fetch_enrichments(supabase, ids: list[str]) -> dict[str, list[str]]:
-    """Return a dict of candidate_id -> existing news_article_urls list.
-
-    Returns empty lists for all IDs if the news_article_urls column doesn't
-    exist yet (migration 009 not yet run). The script will still attempt to
-    write the column; if the migration hasn't run that UPDATE will surface
-    a clear Supabase error.
-    """
+    """Return a dict of candidate_id -> existing news_article_urls list from candidates table."""
     BATCH = 200
     result: dict[str, list[str]] = {}
     try:
         for i in range(0, len(ids), BATCH):
             chunk = ids[i : i + BATCH]
             rows = (
-                supabase.table("candidate_enrichment")
-                .select("candidate_id, news_article_urls")
-                .in_("candidate_id", chunk)
+                supabase.table("candidates")
+                .select("id, news_article_urls")
+                .in_("id", chunk)
                 .execute()
                 .data
             )
             for row in rows:
-                result[row["candidate_id"]] = row.get("news_article_urls") or []
+                result[row["id"]] = row.get("news_article_urls") or []
     except Exception as exc:
         if "news_article_urls" in str(exc):
             log.warning(
-                "news_article_urls column not found — migration 009 may not have been run. "
-                "Run database/009_social_media_columns.sql in Supabase SQL Editor first."
+                "news_article_urls column not found on candidates — "
+                "run database/013_news_article_urls_to_candidates.sql in Supabase SQL Editor first."
             )
         else:
             raise
@@ -229,11 +223,7 @@ def upsert_enrichment_articles(
     existing_urls: list[str],
     new_urls: list[str],
 ) -> int:
-    """Merge new article URLs into candidate_enrichment. Returns number added.
-
-    If the news_article_urls column doesn't exist (migration 009 not run), logs
-    a one-time warning and returns 0.
-    """
+    """Merge new article URLs into candidates.news_article_urls. Returns number added."""
     global _migration_009_articles_warned
 
     merged = merge_urls(existing_urls, new_urls)
@@ -242,28 +232,15 @@ def upsert_enrichment_articles(
         return 0
 
     try:
-        # Check if enrichment row exists
-        rows = (
-            supabase.table("candidate_enrichment")
-            .select("candidate_id")
-            .eq("candidate_id", candidate_id)
-            .execute()
-            .data
-        )
-        if rows:
-            supabase.table("candidate_enrichment").update(
-                {"news_article_urls": merged}
-            ).eq("candidate_id", candidate_id).execute()
-        else:
-            supabase.table("candidate_enrichment").insert(
-                {"candidate_id": candidate_id, "news_article_urls": merged}
-            ).execute()
+        supabase.table("candidates").update(
+            {"news_article_urls": merged}
+        ).eq("id", candidate_id).execute()
     except Exception as exc:
         if "news_article_urls" in str(exc):
             if not _migration_009_articles_warned:
                 log.warning(
-                    "news_article_urls column not found in candidate_enrichment. "
-                    "Run database/009_social_media_columns.sql in Supabase SQL Editor "
+                    "news_article_urls column not found on candidates. "
+                    "Run database/013_news_article_urls_to_candidates.sql in Supabase SQL Editor "
                     "then re-run this script to populate article URLs."
                 )
                 _migration_009_articles_warned = True
