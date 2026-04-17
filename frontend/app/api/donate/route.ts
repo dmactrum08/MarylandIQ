@@ -7,7 +7,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-03-31.basil",
 });
 
-const ALLOWED_AMOUNTS = [5, 10, 25, 50, 100]; // dollars
+const MIN_AMOUNT = 1;   // dollars
+const MAX_AMOUNT = 1000; // dollars
 
 export async function POST(req: NextRequest) {
   let amount: number;
@@ -18,8 +19,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  if (!ALLOWED_AMOUNTS.includes(amount)) {
-    return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+  if (!Number.isFinite(amount) || amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
+    return NextResponse.json({ error: "Amount must be between $1 and $1,000" }, { status: 400 });
   }
 
   const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "https://marylandiq.org";
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       {
         price_data: {
           currency: "usd",
-          unit_amount: amount * 100, // cents
+          unit_amount: Math.round(amount * 100), // cents
           product_data: {
             name: "Support MarylandIQ",
             description:

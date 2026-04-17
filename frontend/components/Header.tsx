@@ -41,6 +41,14 @@ export default function Header() {
                   </a>
                 </li>
               ))}
+              <li>
+                <a
+                  href="/donate"
+                  className="inline-block px-4 py-2 text-sm font-semibold text-white bg-[#F5A623] hover:bg-[#D97706] rounded-md transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-1"
+                >
+                  Donate
+                </a>
+              </li>
               <li className="ml-1">
                 <a
                   href="/ballot"
@@ -100,7 +108,14 @@ export default function Header() {
                 </li>
               ))}
             </ul>
-            <div className="px-4 pb-4 pt-1">
+            <div className="px-4 pb-4 pt-1 space-y-2">
+              <a
+                href="/donate"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-white bg-[#F5A623] hover:bg-[#D97706] rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2"
+              >
+                Donate
+              </a>
               <a
                 href="/ballot"
                 onClick={() => setOpen(false)}

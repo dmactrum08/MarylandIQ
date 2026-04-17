@@ -331,16 +331,16 @@ export default function Home() {
             <div className="shrink-0 sm:ml-auto flex flex-col items-center sm:items-end gap-3">
               <a
                 href="/about"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#92400E] hover:text-[#78350F] underline underline-offset-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 focus:rounded"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#92400E] hover:text-[#78350F] underline underline-offset-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 focus:rounded-lg"
               >
                 About our data sources
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-hidden="true">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                 </svg>
               </a>
               <a
                 href="/donate"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#92400E] hover:text-[#78350F] border border-[#F5A623]/40 hover:border-[#F5A623] rounded-lg px-3 py-1.5 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#78350F] bg-[#F5A623] hover:bg-[#D97706] rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2"
               >
                 Support this project
               </a>
