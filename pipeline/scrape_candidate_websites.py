@@ -363,10 +363,13 @@ def scrape_one(
     return result
 
 
-def fetch_targets(supabase, force: bool = False) -> list[CandidateWebsiteTarget]:
-    candidates = supabase.table("candidates").select(
+def fetch_targets(supabase, force: bool = False, candidate_filter: Optional[str] = None) -> list[CandidateWebsiteTarget]:
+    query = supabase.table("candidates").select(
         "id, full_name, campaign_website_url, news_article_urls"
-    ).execute().data
+    )
+    if candidate_filter:
+        query = query.ilike("full_name", f"%{candidate_filter}%")
+    candidates = query.execute().data
 
     enrichment_rows = supabase.table("candidate_enrichment").select(
         "candidate_id, website_scraped_at, scrape_error, news_scraped_at"
@@ -447,11 +450,15 @@ def scrape_candidate_websites(
     force: bool = False,
     scrape_websites: bool = True,
     scrape_news: bool = True,
+    candidate_filter: Optional[str] = None,
 ) -> dict[str, int]:
     supabase = get_client()
-    targets = fetch_targets(supabase, force=force)
+    targets = fetch_targets(supabase, force=force, candidate_filter=candidate_filter)
     mode = "websites+news" if (scrape_websites and scrape_news) else ("websites" if scrape_websites else "news")
-    log.info(f"Found {len(targets)} targets to scrape  mode={mode}")
+    if candidate_filter:
+        log.info(f"Targeting candidate matching {candidate_filter!r} ({len(targets)} found)  mode={mode}")
+    else:
+        log.info(f"Found {len(targets)} targets to scrape  mode={mode}")
 
     processed = 0
     errors = 0
@@ -511,14 +518,23 @@ if __name__ == "__main__":
         action="store_true",
         help="Only scrape news article URLs; skip campaign websites.",
     )
+    parser.add_argument(
+        "--candidate",
+        metavar="NAME",
+        default=None,
+        help="Scrape a single candidate by name (case-insensitive substring match). "
+             "Implies --force for that candidate. Example: --candidate lukas",
+    )
     args = parser.parse_args()
 
     scrape_websites = not args.news_only
     scrape_news = not args.websites_only
+    # --candidate implies force so it always re-scrapes even if previously done
+    force = args.force or bool(args.candidate)
 
-    log.info(f"=== scrape_candidate_websites.py  force={args.force}  websites={scrape_websites}  news={scrape_news} ===")
+    log.info(f"=== scrape_candidate_websites.py  force={force}  websites={scrape_websites}  news={scrape_news} ===")
     try:
-        summary = scrape_candidate_websites(force=args.force, scrape_websites=scrape_websites, scrape_news=scrape_news)
+        summary = scrape_candidate_websites(force=force, scrape_websites=scrape_websites, scrape_news=scrape_news, candidate_filter=args.candidate)
         log.info(f"Done. Summary: {summary}")
         sys.exit(0)
     except Exception as exc:
