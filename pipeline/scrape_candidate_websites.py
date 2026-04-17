@@ -14,6 +14,7 @@ idempotent by upserting candidate_enrichment rows per candidate.
 
 from __future__ import annotations
 
+import argparse
 import concurrent.futures
 import logging
 import sys
@@ -42,7 +43,11 @@ PLAYWRIGHT_TIMEOUT_MS = 15000
 MAX_WORKERS = 5
 MIN_TEXT_LENGTH = 300
 MAX_TEXT_CHARS = 32000
-USER_AGENT = "MarylandIQ/1.0 (public voter information platform)"
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
+)
 
 CONTENT_SELECTORS = [
     "main",
@@ -55,6 +60,16 @@ CONTENT_SELECTORS = [
     ".page-content",
     ".post-content",
 ]
+
+# Max pages to crawl per candidate domain (homepage + internal links)
+MAX_PAGES_PER_SITE = 5
+
+# File extensions to skip — not text content
+SKIP_EXTENSIONS = {
+    ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp",
+    ".mp4", ".mp3", ".zip", ".doc", ".docx", ".xls", ".xlsx",
+    ".css", ".js", ".ico", ".woff", ".woff2", ".ttf",
+}
 
 ROBOTS_CACHE: dict[str, Optional[RobotFileParser]] = {}
 ROBOTS_LOCK = threading.Lock()
@@ -137,33 +152,117 @@ def extract_text_from_html(html: str) -> str:
     return truncate_text("\n\n".join(chunks).strip())
 
 
-def scrape_with_requests(url: str) -> Optional[str]:
-    response = requests.get(
-        url,
-        timeout=FAST_PATH_TIMEOUT,
-        headers={"User-Agent": USER_AGENT},
-        allow_redirects=True,
-    )
-    response.raise_for_status()
-    return extract_text_from_html(response.text)
+
+def extract_internal_links(base_url: str, html: str) -> list[str]:
+    """Return all internal links found in html, normalized and deduplicated."""
+    parsed_base = urlparse(base_url)
+    base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
+    soup = BeautifulSoup(html, "lxml")
+
+    seen: set[str] = set()
+    links: list[str] = []
+
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        full = urljoin(base_url, href)
+        parsed = urlparse(full)
+
+        # Same domain only
+        if parsed.netloc != parsed_base.netloc:
+            continue
+        # Skip non-http schemes (mailto:, tel:, javascript:, etc.)
+        if parsed.scheme not in ("http", "https"):
+            continue
+        # Skip files that aren't HTML pages
+        ext = parsed.path.lower().rsplit(".", 1)[-1] if "." in parsed.path else ""
+        if f".{ext}" in SKIP_EXTENSIONS:
+            continue
+
+        # Normalize: strip fragment and query string, trailing slash
+        clean = f"{base_origin}{parsed.path}".rstrip("/") or base_origin
+        if clean in seen:
+            continue
+        seen.add(clean)
+        links.append(clean)
+
+    return links
 
 
-def scrape_with_playwright(url: str) -> Optional[str]:
+def fetch_page(url: str) -> tuple[Optional[str], Optional[str]]:
+    """
+    Fetch a single URL. Returns (html, error_note).
+    Tries requests first; falls back to Playwright.
+    """
+    req_error = None
+    try:
+        resp = requests.get(
+            url,
+            timeout=FAST_PATH_TIMEOUT,
+            headers={"User-Agent": USER_AGENT},
+            allow_redirects=True,
+        )
+        resp.raise_for_status()
+        return resp.text, None
+    except Exception as exc:
+        req_error = type(exc).__name__
+
     try:
         from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            try:
+                page = browser.new_page(user_agent=USER_AGENT)
+                page.goto(url, timeout=PLAYWRIGHT_TIMEOUT_MS, wait_until="domcontentloaded")
+                try:
+                    page.wait_for_load_state("networkidle", timeout=8000)
+                except Exception:
+                    pass
+                return page.content(), None
+            finally:
+                browser.close()
     except Exception as exc:
-        raise RuntimeError(f"Playwright not available: {exc}") from exc
+        return None, f"requests:{req_error};playwright:{type(exc).__name__}"
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            page = browser.new_page(user_agent=USER_AGENT)
-            page.goto(url, timeout=PLAYWRIGHT_TIMEOUT_MS, wait_until="domcontentloaded")
-            page.wait_for_load_state("networkidle", timeout=PLAYWRIGHT_TIMEOUT_MS)
-            html = page.content()
-            return extract_text_from_html(html)
-        finally:
-            browser.close()
+
+def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
+    """
+    BFS crawl of a candidate's domain starting from start_url.
+    Visits up to MAX_PAGES_PER_SITE pages, combining all extracted text.
+    Returns (combined_text, method_note, pages_scraped).
+    """
+    parsed_base = urlparse(start_url)
+    base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
+
+    queue: list[str] = [start_url.rstrip("/") or base_origin]
+    visited: set[str] = set()
+    all_text: list[str] = []
+    pages_scraped = 0
+
+    while queue and pages_scraped < MAX_PAGES_PER_SITE:
+        url = queue.pop(0)
+        if url in visited:
+            continue
+        visited.add(url)
+
+        html, err = fetch_page(url)
+        if not html:
+            continue
+
+        text = extract_text_from_html(html)
+        if text and len(text) >= MIN_TEXT_LENGTH:
+            all_text.append(f"[Page: {url}]\n{text}")
+            pages_scraped += 1
+
+        # Discover new internal links from this page and add to queue
+        for link in extract_internal_links(url, html):
+            if link not in visited and link not in queue:
+                queue.append(link)
+
+    if not all_text:
+        return None, "no_content", 0
+
+    combined = truncate_text("\n\n".join(all_text))
+    return combined, "crawl", pages_scraped
 
 
 def scrape_one(target: CandidateWebsiteTarget) -> ScrapeResult:
@@ -171,31 +270,27 @@ def scrape_one(target: CandidateWebsiteTarget) -> ScrapeResult:
     if not url:
         return ScrapeResult(target.id, None, None, True, "empty_url")
 
-    if not check_robots_allowed(url):
-        return ScrapeResult(target.id, None, None, True, "robots_disallowed")
+    text, method, pages = crawl_domain(url)
+    if text and len(text) >= MIN_TEXT_LENGTH:
+        return ScrapeResult(target.id, method, text, False, f"pages={pages}")
 
-    try:
-        text = scrape_with_requests(url)
-        if text and len(text) >= MIN_TEXT_LENGTH:
-            return ScrapeResult(target.id, "requests", text, False, "ok")
-    except Exception as exc:
-        requests_error = f"requests_failed:{type(exc).__name__}"
-    else:
-        requests_error = "requests_too_short"
-
-    try:
-        text = scrape_with_playwright(url)
-        if text and len(text) >= MIN_TEXT_LENGTH:
-            return ScrapeResult(target.id, "playwright", text, False, "ok")
-        return ScrapeResult(target.id, "playwright", text, True, "playwright_too_short")
-    except Exception as exc:
-        return ScrapeResult(target.id, None, None, True, f"{requests_error};playwright_failed:{type(exc).__name__}")
+    return ScrapeResult(target.id, None, None, True, f"no_content_after_crawl pages={pages}")
 
 
-def fetch_targets(supabase) -> list[CandidateWebsiteTarget]:
+def fetch_targets(supabase, force: bool = False) -> list[CandidateWebsiteTarget]:
     candidates = supabase.table("candidates").select(
         "id, full_name, campaign_website_url"
     ).not_.is_("campaign_website_url", "null").execute().data
+
+    if force:
+        return [
+            CandidateWebsiteTarget(
+                id=row["id"],
+                full_name=row["full_name"],
+                campaign_website_url=row["campaign_website_url"],
+            )
+            for row in candidates
+        ]
 
     enrichment_rows = supabase.table("candidate_enrichment").select(
         "candidate_id, website_scraped_at, scrape_error"
@@ -247,9 +342,9 @@ def log_pipeline_run(supabase, processed: int, errors: int) -> None:
     ).execute()
 
 
-def scrape_candidate_websites() -> dict[str, int]:
+def scrape_candidate_websites(force: bool = False) -> dict[str, int]:
     supabase = get_client()
-    targets = fetch_targets(supabase)
+    targets = fetch_targets(supabase, force=force)
     log.info(f"Found {len(targets)} candidate websites to scrape")
 
     processed = 0
@@ -267,7 +362,13 @@ def scrape_candidate_websites() -> dict[str, int]:
                 errors += 1
                 continue
 
-            persist_result(supabase, result)
+            try:
+                persist_result(supabase, result)
+            except Exception as exc:
+                log.error(f"DB write error for {target.full_name}: {exc}")
+                errors += 1
+                continue
+
             processed += 1
 
             if result.scrape_error:
@@ -276,7 +377,7 @@ def scrape_candidate_websites() -> dict[str, int]:
             else:
                 text_length = len(result.text or "")
                 log.info(
-                    f"Scraped {target.full_name} via {result.method} ({text_length} chars)"
+                    f"Scraped {target.full_name} — {result.notes}, {text_length} chars"
                 )
 
     log_pipeline_run(supabase, processed, errors)
@@ -284,9 +385,17 @@ def scrape_candidate_websites() -> dict[str, int]:
 
 
 if __name__ == "__main__":
-    log.info("=== scrape_candidate_websites.py ===")
+    parser = argparse.ArgumentParser(description="Scrape candidate campaign websites.")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-scrape all candidates, including those already scraped successfully.",
+    )
+    args = parser.parse_args()
+
+    log.info(f"=== scrape_candidate_websites.py  force={args.force} ===")
     try:
-        summary = scrape_candidate_websites()
+        summary = scrape_candidate_websites(force=args.force)
         log.info(f"Done. Summary: {summary}")
         sys.exit(0)
     except Exception as exc:

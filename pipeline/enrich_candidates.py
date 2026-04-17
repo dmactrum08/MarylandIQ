@@ -35,6 +35,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
+import requests
 from dotenv import load_dotenv
 
 from pipeline.utils.supabase_client import get_client
@@ -49,7 +50,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # Increment when the prompt or schema changes; triggers re-enrichment of all rows.
-CURRENT_VERSION = 1
+CURRENT_VERSION = 3
 
 LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -82,10 +83,13 @@ APPROVED_TAGS_LOWER = {t.lower(): t for t in APPROVED_ISSUE_TAGS}
 
 SYSTEM_PROMPT = (
     "/no_think "
-    "You are a factual summarizer for a nonpartisan voter information platform. "
-    "You extract and summarize only what candidates have explicitly stated. "
-    "You never invent positions. If information is insufficient, return null "
-    "for that field. Always return valid JSON with no markdown fences or preamble."
+    "You are a factual researcher for a nonpartisan voter information platform. "
+    "Extract and organize information only from the provided sources — never invent "
+    "quotes, positions, or facts. Use the candidate's own language wherever possible. "
+    "Distinguish clearly between what the candidate says about themselves and what "
+    "external sources (news, others) say about them. "
+    "If a section has no source material, return null for that field. "
+    "Always return valid JSON with no markdown fences or preamble."
 )
 
 
@@ -200,6 +204,7 @@ class EnrichmentTarget:
     campaign_website_url: Optional[str]
     scraped_website_text: Optional[str]
     social_inference_text: Optional[str]
+    news_article_urls: list
 
 
 # ---------------------------------------------------------------------------
@@ -213,29 +218,87 @@ def _truncate(text: str, max_chars: int) -> str:
     return text[:max_chars] + "\n[...truncated]"
 
 
+def _scrape_article(url: str, max_chars: int = 2000) -> Optional[str]:
+    """Fetch plain text from a news article URL. Returns None on failure or login wall."""
+    import re
+    from html import unescape as _unescape
+    from bs4 import BeautifulSoup
+
+    LOGIN_SIGNALS = ["subscribe to read", "sign in to read", "create a free account", "paywall"]
+    try:
+        resp = requests.get(url, timeout=8, headers={"User-Agent": "MarylandIQ/1.0"}, allow_redirects=True)
+        resp.raise_for_status()
+    except Exception:
+        return None
+
+    soup = BeautifulSoup(resp.text, "lxml")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+
+    # Prefer article/main content nodes
+    content = None
+    for sel in ["article", "main", ".article-body", ".story-body", ".entry-content", ".post-content"]:
+        node = soup.select_one(sel)
+        if node:
+            content = node.get_text(" ", strip=True)
+            break
+    if not content:
+        content = soup.get_text(" ", strip=True)
+
+    text = _unescape(" ".join(content.split()))
+    if not text or len(text) < 100:
+        return None
+    if any(signal in text.lower() for signal in LOGIN_SIGNALS):
+        return None
+    return text[:max_chars]
+
+
+MAX_ARTICLES_TO_SCRAPE = 3
+MAX_ARTICLE_CHARS = 2000    # per article
+MAX_WEBSITE_CHARS = 12000   # website can be large; use as much as possible
+MAX_SOCIAL_CHARS = 3000     # social posts and profiles
+
+
 def build_user_prompt(target: EnrichmentTarget) -> str:
     sources: list[str] = []
     if target.campaign_website_url:
         sources.append(target.campaign_website_url)
 
+    website_text = _truncate(target.scraped_website_text or "none", MAX_WEBSITE_CHARS)
+    social_text = _truncate(target.social_inference_text or "none", MAX_SOCIAL_CHARS)
+
+    # Scrape up to MAX_ARTICLES_TO_SCRAPE news articles for additional context
+    article_sections: list[str] = []
+    for url in (target.news_article_urls or [])[:MAX_ARTICLES_TO_SCRAPE]:
+        text = _scrape_article(url, max_chars=MAX_ARTICLE_CHARS)
+        if text:
+            article_sections.append(f"Source: {url}\n{text}")
+            sources.append(url)
+
     source_line = ", ".join(sources) if sources else "none"
-    # ~4 chars per token; reserve ~600 tokens for prompt scaffold + JSON response
-    website_text = _truncate(target.scraped_website_text or "none", 6000)
-    social_text = _truncate(target.social_inference_text or "none", 2000)
+    article_block = "\n\n".join(article_sections) if article_sections else "none"
+
+    approved_tags = ", ".join(APPROVED_ISSUE_TAGS)
 
     return (
         f"Candidate: {target.full_name}\n"
-        f"Office: {target.office_name}, {target.jurisdiction}\n"
+        f"Office seeking: {target.office_name}, {target.jurisdiction}\n"
         f"Sources provided: {source_line}\n\n"
-        f"---- WEBSITE TEXT ----\n"
+        f"---- CAMPAIGN WEBSITE & SOCIAL MEDIA (candidate's own words) ----\n"
         f"{website_text}\n\n"
-        f"---- SOCIAL MEDIA TEXT ----\n"
-        f"{social_text}\n\n"
+        f"[Social]\n{social_text}\n\n"
+        f"---- NEWS ARTICLES & EXTERNAL COVERAGE ----\n"
+        f"{article_block}\n\n"
         f"----\n\n"
-        f"Return JSON with these fields:\n"
+        f"Using only the source material above, return JSON with these fields:\n"
         f'{{\n'
-        f'  "summary": "string (2-4 sentences) | null",\n'
-        f'  "issue_tags": ["string[] from approved list only"],\n'
+        f'  "summary": "A full-paragraph narrative (4-8 sentences) covering who this candidate is, their background, and what they stand for. Write in third person. Use as much detail as the sources allow. null if no information.",\n'
+        f'  "campaign_voice": "3-6 direct quotes or close paraphrases of the most revealing things the candidate has said in their own words — from the website or social media only. Preserve their language. Separate each with a blank line. null if no website or social content.",\n'
+        f'  "news_summary": "2-4 sentences summarizing what external sources (news articles, others) say about this candidate — their record, background, endorsements, or controversies. null if no article content.",\n'
+        f'  "policy_priorities": [\n'
+        f'    {{"priority": "issue name", "description": "what they specifically say about it", "source_snippet": "direct quote or close paraphrase"}}\n'
+        f'  ],\n'
+        f'  "issue_tags": ["approved tags only — choose from: {approved_tags}"],\n'
         f'  "issue_tag_evidence": [{{"tag": "...", "quote_snippet": "...", "source_url": "..."}}],\n'
         f'  "inferred_from_social": false,\n'
         f'  "confidence": "high | medium | low"\n'
@@ -287,7 +350,7 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
         supabase.table("candidate_enrichment")
         .select(
             "candidate_id, scraped_website_text, social_inference_text, "
-            "ai_generated_at, enrichment_version"
+            "news_article_urls, ai_generated_at, enrichment_version"
         )
         .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
         .not_.is_("scraped_website_text", "null")
@@ -295,12 +358,12 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
         .data
     )
 
-    # Also include rows where only social_inference_text is set (future use)
+    # Also include rows where only social_inference_text is set
     rows_social = (
         supabase.table("candidate_enrichment")
         .select(
             "candidate_id, scraped_website_text, social_inference_text, "
-            "ai_generated_at, enrichment_version"
+            "news_article_urls, ai_generated_at, enrichment_version"
         )
         .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
         .is_("scraped_website_text", "null")
@@ -309,7 +372,24 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
         .data
     )
 
-    all_rows = rows + rows_social
+    # Also include rows that have only news_article_urls (no website or social text yet)
+    rows_articles = (
+        supabase.table("candidate_enrichment")
+        .select(
+            "candidate_id, scraped_website_text, social_inference_text, "
+            "news_article_urls, ai_generated_at, enrichment_version"
+        )
+        .or_(f"ai_generated_at.is.null,enrichment_version.lt.{CURRENT_VERSION}")
+        .is_("scraped_website_text", "null")
+        .is_("social_inference_text", "null")
+        .not_.is_("news_article_urls", "null")
+        .execute()
+        .data
+    )
+    # Filter to only rows that actually have articles (not just an empty array)
+    rows_articles = [r for r in rows_articles if r.get("news_article_urls")]
+
+    all_rows = rows + rows_social + rows_articles
     candidate_ids = [r["candidate_id"] for r in all_rows]
 
     if not candidate_ids:
@@ -353,6 +433,7 @@ def fetch_targets(supabase) -> list[EnrichmentTarget]:
                 campaign_website_url=cand.get("campaign_website_url"),
                 scraped_website_text=enrichment.get("scraped_website_text"),
                 social_inference_text=enrichment.get("social_inference_text"),
+                news_article_urls=enrichment.get("news_article_urls") or [],
             )
         )
 
@@ -371,6 +452,18 @@ def persist_result(supabase, target: EnrichmentTarget, parsed: dict) -> None:
     if not isinstance(summary, str):
         summary = None
 
+    campaign_voice = parsed.get("campaign_voice")
+    if not isinstance(campaign_voice, str):
+        campaign_voice = None
+
+    news_summary = parsed.get("news_summary")
+    if not isinstance(news_summary, str):
+        news_summary = None
+
+    policy_priorities = parsed.get("policy_priorities") or []
+    if not isinstance(policy_priorities, list):
+        policy_priorities = []
+
     inferred = bool(parsed.get("inferred_from_social", False))
     confidence = parsed.get("confidence")
     if confidence not in ("high", "medium", "low"):
@@ -379,6 +472,9 @@ def persist_result(supabase, target: EnrichmentTarget, parsed: dict) -> None:
     supabase.table("candidate_enrichment").update(
         {
             "ai_summary": summary,
+            "campaign_voice": campaign_voice,
+            "news_summary": news_summary,
+            "policy_priorities": policy_priorities,
             "ai_summary_sources": [{"url": target.campaign_website_url, "label": "Campaign website"}]
             if target.campaign_website_url
             else [],

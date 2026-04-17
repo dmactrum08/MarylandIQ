@@ -51,9 +51,12 @@ class CandidateRow:
     facebook_url: Optional[str]
     twitter_handle: Optional[str]
     linkedin_url: Optional[str]
+    instagram_url: Optional[str]
+    threads_url: Optional[str]
     scraped_website_text: Optional[str]
     ai_summary: Optional[str]
     issue_tags: list
+    news_article_urls: list
 
 
 def compute_score(row: CandidateRow) -> int:
@@ -79,9 +82,13 @@ def compute_score(row: CandidateRow) -> int:
     if isinstance(row.issue_tags, list) and len(row.issue_tags) >= 2:
         score += 15
 
-    # +10: any social link
-    if row.facebook_url or row.twitter_handle or row.linkedin_url:
+    # +10: any social link (includes Instagram and Threads)
+    if row.facebook_url or row.twitter_handle or row.linkedin_url or row.instagram_url or row.threads_url:
         score += 10
+
+    # +5: has news article coverage (capped by overall max of 100)
+    if isinstance(row.news_article_urls, list) and row.news_article_urls:
+        score += 5
 
     return min(score, 100)
 
@@ -92,7 +99,8 @@ def fetch_candidates(supabase) -> list[CandidateRow]:
         .select(
             "id, full_name, party, filing_status, filed_date, "
             "campaign_website_url, facebook_url, twitter_handle, linkedin_url, "
-            "candidate_enrichment(scraped_website_text, ai_summary, issue_tags)"
+            "instagram_url, threads_url, "
+            "candidate_enrichment(scraped_website_text, ai_summary, issue_tags, news_article_urls)"
         )
         .execute()
         .data
@@ -117,9 +125,12 @@ def fetch_candidates(supabase) -> list[CandidateRow]:
                 facebook_url=c.get("facebook_url"),
                 twitter_handle=c.get("twitter_handle"),
                 linkedin_url=c.get("linkedin_url"),
+                instagram_url=c.get("instagram_url"),
+                threads_url=c.get("threads_url"),
                 scraped_website_text=enr.get("scraped_website_text"),
                 ai_summary=enr.get("ai_summary"),
                 issue_tags=enr.get("issue_tags") or [],
+                news_article_urls=enr.get("news_article_urls") or [],
             )
         )
 

@@ -13,6 +13,12 @@ import type {
   AiSummarySource,
 } from "@/lib/types";
 
+interface PolicyPriority {
+  priority: string;
+  description: string;
+  source_snippet?: string;
+}
+
 // ─── ISR ──────────────────────────────────────────────────────────────────────
 
 export const revalidate = 3600;
@@ -172,12 +178,26 @@ export default async function CandidatePage({
   const hasFacebook = !!candidate.facebook_url;
   const hasTwitter = !!candidate.twitter_handle;
   const hasLinkedIn = !!candidate.linkedin_url;
-  const hasSocialLinks = hasWebsite || hasFacebook || hasTwitter || hasLinkedIn;
+  const hasInstagram = !!(candidate as any).instagram_url;
+  const hasThreads = !!(candidate as any).threads_url;
+  const hasSocialLinks = hasWebsite || hasFacebook || hasTwitter || hasLinkedIn || hasInstagram || hasThreads;
 
   const hasAiSummary = !!enrichment?.ai_summary;
+  const hasCampaignVoice = !!(enrichment as any)?.campaign_voice;
+  const hasNewsSummary = !!(enrichment as any)?.news_summary;
+  const policyPriorities: PolicyPriority[] = (enrichment as any)?.policy_priorities ?? [];
+  const newsArticleUrls: string[] = (enrichment as any)?.news_article_urls ?? [];
   const hasIssueTags = (enrichment?.issue_tags ?? []).length > 0;
   const hasSocialInference = !!enrichment?.inferred_from_social && !!enrichment?.social_inference_text;
   const isWithdrawn = candidate.filing_status !== "Active";
+
+  function twitterUrl(handle: string) {
+    return handle.startsWith("http") ? handle : `https://x.com/${handle.replace(/^@/, "")}`;
+  }
+
+  function siteHostname(url: string) {
+    try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
+  }
 
   return (
     <main aria-labelledby="candidate-heading" className="flex-1">
@@ -254,7 +274,7 @@ export default async function CandidatePage({
               {/* AI Summary */}
               <section aria-labelledby="summary-heading">
                 <SectionHeader label={<TrustLabel variant="machine" />}>
-                  Candidate summary
+                  About this candidate
                 </SectionHeader>
                 {hasAiSummary ? (
                   <div className="space-y-3">
@@ -279,6 +299,101 @@ export default async function CandidatePage({
                   <NoInfoBox message="No public information found beyond the official filing. This candidate does not appear to have a campaign website or public social media presence." />
                 )}
               </section>
+
+              {/* In their own words */}
+              {hasCampaignVoice && (
+                <section aria-labelledby="campaign-voice-heading">
+                  <SectionHeader label={<TrustLabel variant="candidate" />}>
+                    In their own words
+                  </SectionHeader>
+                  <div className="p-5 bg-[#F8FAFC] border border-gray-200 rounded-xl space-y-4">
+                    {((enrichment as any).campaign_voice as string)
+                      .split(/\n\n+/)
+                      .filter((s: string) => s.trim())
+                      .map((snippet: string, i: number) => (
+                        <blockquote
+                          key={i}
+                          className="pl-4 border-l-2 border-[#CC0000] text-sm text-[#0F172A] leading-relaxed italic"
+                        >
+                          {snippet.trim()}
+                        </blockquote>
+                      ))}
+                    {hasWebsite && (
+                      <p className="text-xs text-[#94a3b8] pt-1">
+                        Source:{" "}
+                        <a
+                          href={candidate.campaign_website_url!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-[#CC0000] underline underline-offset-2"
+                        >
+                          {siteHostname(candidate.campaign_website_url!)}
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* Key priorities */}
+              {policyPriorities.length > 0 && (
+                <section aria-labelledby="priorities-heading">
+                  <SectionHeader label={<TrustLabel variant="candidate" />}>
+                    Key priorities
+                  </SectionHeader>
+                  <div className="space-y-3">
+                    {policyPriorities.map((p: PolicyPriority, i: number) => (
+                      <div
+                        key={i}
+                        className="p-4 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
+                      >
+                        <p className="text-sm font-semibold text-[#0F172A] mb-1">{p.priority}</p>
+                        <p className="text-sm text-[#475569] leading-relaxed mb-2">{p.description}</p>
+                        {p.source_snippet && (
+                          <blockquote className="pl-3 border-l-2 border-gray-200 text-xs text-[#94a3b8] italic">
+                            &ldquo;{p.source_snippet}&rdquo;
+                          </blockquote>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* In the news */}
+              {(hasNewsSummary || newsArticleUrls.length > 0) && (
+                <section aria-labelledby="news-heading">
+                  <SectionHeader label={<TrustLabel variant="inferred" label="News coverage" />}>
+                    In the news
+                  </SectionHeader>
+                  <div className="p-5 bg-[#F8FAFC] border border-gray-200 rounded-xl">
+                    {hasNewsSummary && (
+                      <p className="text-sm text-[#475569] leading-relaxed mb-4">
+                        {(enrichment as any).news_summary}
+                      </p>
+                    )}
+                    {newsArticleUrls.length > 0 && (
+                      <ul className="space-y-2">
+                        {newsArticleUrls.map((url: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <svg className="w-3.5 h-3.5 text-[#94a3b8] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#475569] hover:text-[#CC0000] underline underline-offset-2 break-all"
+                            >
+                              {siteHostname(url)}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {/* Issue tags */}
               <section aria-labelledby="tags-heading">
@@ -435,7 +550,7 @@ export default async function CandidatePage({
                     )}
                     {hasTwitter && (
                       <li className="px-4 py-3">
-                        <ExternalLink href={`https://x.com/${candidate.twitter_handle}`}>
+                        <ExternalLink href={twitterUrl(candidate.twitter_handle!)}>
                           X / Twitter
                         </ExternalLink>
                       </li>
@@ -444,6 +559,20 @@ export default async function CandidatePage({
                       <li className="px-4 py-3">
                         <ExternalLink href={candidate.linkedin_url!}>
                           LinkedIn
+                        </ExternalLink>
+                      </li>
+                    )}
+                    {hasInstagram && (
+                      <li className="px-4 py-3">
+                        <ExternalLink href={(candidate as any).instagram_url}>
+                          Instagram
+                        </ExternalLink>
+                      </li>
+                    )}
+                    {hasThreads && (
+                      <li className="px-4 py-3">
+                        <ExternalLink href={(candidate as any).threads_url}>
+                          Threads
                         </ExternalLink>
                       </li>
                     )}
