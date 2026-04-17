@@ -108,7 +108,7 @@ export default async function MeasurePage({
       />
 
       <div className="bg-white flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-5xl 2xl:max-w-[1100px] 3xl:max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             {/* ── Main content ── */}

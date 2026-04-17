@@ -35,7 +35,7 @@ export default async function CandidatesPage({
       />
 
       <div className="bg-white flex-1">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+        <div className="max-w-6xl 2xl:max-w-[1280px] 3xl:max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
           <CandidatesFilterForm q={q} county={county} office={office} party={party} />
 
           <Suspense fallback={<ResultsSkeleton />}>

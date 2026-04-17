@@ -154,7 +154,14 @@ export default function CandidateResults({
         <>
           {/* Desktop table */}
           <div className="hidden sm:block border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col className="w-[32%]" />
+                <col className="w-[20%]" />
+                <col className="w-[14%]" />
+                <col className="w-[6%]" />
+              </colgroup>
               <thead>
                 <tr className="bg-[#F8FAFC] border-b border-gray-200">
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">
@@ -175,7 +182,7 @@ export default function CandidateResults({
               <tbody className="divide-y divide-gray-100">
                 {candidates.map((c) => (
                   <tr key={c.id} className="hover:bg-[#FFF5F5] transition-colors group">
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 truncate">
                       <a
                         href={`/candidates/${c.slug}`}
                         className="font-medium text-[#0F172A] group-hover:text-[#CC0000] transition-colors focus:outline-none focus:underline"
@@ -183,7 +190,7 @@ export default function CandidateResults({
                         {c.full_name}
                       </a>
                     </td>
-                    <td className="px-4 py-3 text-[#475569]">
+                    <td className="px-4 py-3 text-[#475569] truncate">
                       {c.office_name ? (
                         <a
                           href={c.office_slug ? `/offices/${c.office_slug}` : "#"}
@@ -282,7 +289,7 @@ export default function CandidateResults({
               <a
                 href={currentPage > 1 ? pageUrl(currentPage - 1) : undefined}
                 aria-disabled={currentPage <= 1}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2 ${
+                className={`inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2 ${
                   currentPage <= 1
                     ? "border-gray-100 text-[#94a3b8] pointer-events-none"
                     : "border-gray-200 text-[#475569] hover:border-gray-400 hover:text-[#0F172A]"
@@ -307,7 +314,7 @@ export default function CandidateResults({
               <a
                 href={currentPage < totalPages ? pageUrl(currentPage + 1) : undefined}
                 aria-disabled={currentPage >= totalPages}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2 ${
+                className={`inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2 ${
                   currentPage >= totalPages
                     ? "border-gray-100 text-[#94a3b8] pointer-events-none"
                     : "border-gray-200 text-[#475569] hover:border-gray-400 hover:text-[#0F172A]"

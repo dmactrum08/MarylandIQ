@@ -21,14 +21,14 @@ export default function CountiesPage() {
 
       {/* ── County grid ── */}
       <div className="bg-white flex-1">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         <p className="text-sm text-[#475569] mb-6">
           <span className="font-semibold text-[#0F172A]">24</span> jurisdictions — 23 counties + Baltimore City
         </p>
 
         <ul
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-4"
           role="list"
           aria-label="Maryland counties and jurisdictions"
         >

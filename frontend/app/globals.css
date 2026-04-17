@@ -13,6 +13,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Custom breakpoints for 2K/4K screens */
+@theme {
+  --breakpoint-3xl: 1920px;
+  --breakpoint-4xl: 2560px;
+}
+
 /* Dark mode intentionally disabled — MarylandIQ is light-only for now */
 
 body {

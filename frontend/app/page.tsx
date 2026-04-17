@@ -15,7 +15,7 @@ export default function Home() {
           HERO
       ══════════════════════════════════════════ */}
       <section aria-labelledby="hero-heading" className="bg-[#0F172A] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
+        <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
             {/* Left: Headline + CTAs */}
@@ -73,7 +73,7 @@ export default function Home() {
             </div>
 
             {/* Right: Ballot lookup card */}
-            <div className="lg:justify-self-end w-full max-w-md">
+            <div className="lg:justify-self-end w-full max-w-md 2xl:max-w-lg">
               <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-1">
                   <svg className="w-5 h-5 text-[#CC0000] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
@@ -127,7 +127,7 @@ export default function Home() {
           CANDIDATE SEARCH
       ══════════════════════════════════════════ */}
       <section aria-labelledby="search-heading" className="bg-[#F8FAFC] border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="max-w-2xl mx-auto text-center">
             <h2 id="search-heading" className="text-2xl font-bold text-[#0F172A] mb-2">
               Search for any candidate
@@ -176,7 +176,7 @@ export default function Home() {
           BROWSE BY COUNTY
       ══════════════════════════════════════════ */}
       <section aria-labelledby="county-heading" className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-14">
           <div className="mb-8">
             <h2 id="county-heading" className="text-2xl font-bold text-[#0F172A] mb-1">
               Browse by county
@@ -187,7 +187,7 @@ export default function Home() {
           </div>
 
           <ul
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-3"
             role="list"
             aria-label="Maryland counties"
           >
@@ -219,7 +219,7 @@ export default function Home() {
           BROWSE BY OFFICE
       ══════════════════════════════════════════ */}
       <section aria-labelledby="office-heading" className="bg-[#F8FAFC] border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h2 id="office-heading" className="text-2xl font-bold text-[#0F172A] mb-1">
@@ -264,7 +264,7 @@ export default function Home() {
           HOW IT WORKS
       ══════════════════════════════════════════ */}
       <section aria-labelledby="how-heading" className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h2 id="how-heading" className="text-2xl font-bold text-[#0F172A] mb-2">
               How MarylandIQ works
@@ -311,7 +311,7 @@ export default function Home() {
           TRUST STRIP
       ══════════════════════════════════════════ */}
       <section aria-labelledby="trust-heading" className="bg-[#FFFBEB] border-b border-[#F5A623]/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-7xl 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="shrink-0 w-12 h-12 rounded-xl bg-[#F5A623]/20 flex items-center justify-center" aria-hidden="true">
               <svg className="w-6 h-6 text-[#B45309]" fill="none" viewBox="0 0 24 24" strokeWidth="1.75" stroke="currentColor" aria-hidden="true">
