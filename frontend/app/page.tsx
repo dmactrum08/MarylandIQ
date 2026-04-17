@@ -83,7 +83,7 @@ export default function Home() {
                   <h2 className="text-base font-semibold text-[#0F172A]">Find your ballot</h2>
                 </div>
                 <p className="text-sm text-[#64748b] mb-4 ml-7">
-                  Enter your Maryland address to see every race on your ballot.
+                  Enter your Maryland address — or just a city name — to see every race on your ballot.
                 </p>
 
                 <form action="/ballot" method="GET" role="search" aria-label="Ballot lookup by address">
@@ -150,7 +150,7 @@ export default function Home() {
                 id="candidate-search"
                 type="search"
                 name="q"
-                placeholder="e.g. Jane Smith, Prince George's County Sheriff..."
+                placeholder="e.g. Jane Smith, Marcus Brown..."
                 className="flex-1 px-4 py-3 text-sm text-[#0F172A] border border-gray-300 rounded-lg bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent transition-colors duration-150"
                 aria-describedby="search-hint"
               />
@@ -166,7 +166,7 @@ export default function Home() {
               </button>
             </form>
             <p id="search-hint" className="mt-3 text-xs text-[#64748b]">
-              Searching all 24 Maryland counties · 2026 primary &amp; general candidates
+              Search by candidate name · Filter by county, office, or party on the results page
             </p>
           </div>
         </div>
