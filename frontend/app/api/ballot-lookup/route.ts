@@ -174,13 +174,19 @@ export async function GET(req: NextRequest) {
     // Direct lat/lng — no geocoding needed
     lat = parseFloat(rawLat);
     lng = parseFloat(rawLng);
-    if (isNaN(lat) || isNaN(lng)) {
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       return NextResponse.json(
         { error: "Invalid lat/lng values." },
         { status: 400 }
       );
     }
   } else if (rawAddress) {
+    if (rawAddress.length > 500) {
+      return NextResponse.json(
+        { error: "Address is too long." },
+        { status: 400 }
+      );
+    }
     const address = normalizeMarylandAddress(rawAddress);
 
     // 1. Try Census first — most accurate for complete addresses

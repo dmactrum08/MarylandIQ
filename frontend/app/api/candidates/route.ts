@@ -29,7 +29,7 @@ export interface CandidatesApiResponse {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const q = searchParams.get("q")?.trim() ?? "";
+  const q = (searchParams.get("q")?.trim() ?? "").slice(0, 200);
   const county = searchParams.get("county")?.trim() ?? "";
   const office = searchParams.get("office")?.trim() ?? "";
   const party = searchParams.get("party")?.trim() ?? "";

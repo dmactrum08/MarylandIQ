@@ -4,6 +4,7 @@ import type { SearchResult } from "@/lib/types";
 
 const MAX_RESULTS = 20;
 const MIN_QUERY_LENGTH = 2;
+const MAX_QUERY_LENGTH = 200;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -12,6 +13,12 @@ export async function GET(req: NextRequest) {
   if (q.length < MIN_QUERY_LENGTH) {
     return NextResponse.json(
       { error: `Query must be at least ${MIN_QUERY_LENGTH} characters.` },
+      { status: 400 }
+    );
+  }
+  if (q.length > MAX_QUERY_LENGTH) {
+    return NextResponse.json(
+      { error: `Query must be ${MAX_QUERY_LENGTH} characters or fewer.` },
       { status: 400 }
     );
   }
