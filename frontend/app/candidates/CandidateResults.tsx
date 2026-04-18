@@ -202,7 +202,7 @@ export default function CandidateResults({
                           )}
                         </a>
                       ) : (
-                        <span className="text-[#94a3b8]">—</span>
+                        <span className="text-[#94a3b8]">N/A</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-[#475569]">
@@ -214,7 +214,7 @@ export default function CandidateResults({
                           {c.jurisdiction_name}
                         </a>
                       ) : (
-                        <span className="text-[#94a3b8]">—</span>
+                        <span className="text-[#94a3b8]">N/A</span>
                       )}
                     </td>
                     <td className="px-4 py-3">{partyBadge(c.party)}</td>

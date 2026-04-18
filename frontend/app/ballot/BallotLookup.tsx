@@ -349,7 +349,7 @@ export default function BallotLookup() {
             Look up your ballot
           </h1>
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
-            Enter your Maryland address to see every race on your 2026 ballot —
+            Enter your Maryland address to see every race on your 2026 ballot:
             school board, county council, sheriff, state&apos;s attorney, and more.
           </p>
 
@@ -440,7 +440,7 @@ export default function BallotLookup() {
           <div aria-live="polite" className="space-y-4">
             <div>
               <h2 className="text-base font-semibold text-[#0F172A]">
-                We found multiple Maryland addresses — which one did you mean?
+                We found multiple Maryland addresses. Which one did you mean?
               </h2>
               <p className="text-sm text-[#475569] mt-1">
                 Select the correct address below to look up your ballot.
@@ -528,7 +528,7 @@ export default function BallotLookup() {
             <div className="p-4 bg-[#F8FAFC] border border-gray-200 rounded-xl">
               <p className="text-xs text-[#475569] leading-relaxed">
                 <span className="font-semibold text-[#0F172A]">Your address is not stored.</span>{" "}
-                Geocoding is ephemeral — only the derived precinct ID is used. MarylandIQ does not
+                Geocoding is ephemeral. Only the derived precinct ID is used. MarylandIQ does not
                 build voter profiles and does not sell data.{" "}
                 <a href="/privacy" className="text-[#CC0000] hover:underline">Privacy policy →</a>
               </p>

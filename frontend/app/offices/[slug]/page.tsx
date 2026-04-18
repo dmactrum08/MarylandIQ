@@ -34,7 +34,7 @@ export async function generateMetadata({
   if (!office) return { title: "Office not found" };
   return {
     title: office.name,
-    description: `2026 Maryland ${office.name} races — all counties and candidates.`,
+    description: `2026 Maryland ${office.name} races across all counties and candidates.`,
   };
 }
 

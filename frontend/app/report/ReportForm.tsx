@@ -54,7 +54,7 @@ export default function ReportForm({ defaultPageUrl }: { defaultPageUrl?: string
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <p className="text-sm font-semibold text-green-800">Report received — thank you.</p>
+        <p className="text-sm font-semibold text-green-800">Report received. Thank you.</p>
         <p className="text-xs text-green-700">We'll review it and apply corrections directly.</p>
         <a href="/" className="inline-block mt-2 text-xs text-[#CC0000] hover:underline">Back to home</a>
       </div>
@@ -115,7 +115,7 @@ export default function ReportForm({ defaultPageUrl }: { defaultPageUrl?: string
       {/* Email */}
       <div>
         <label htmlFor="email" className="block text-xs font-medium text-[#475569] mb-1">
-          Your email <span className="text-[#94a3b8]">(optional — for follow-up only)</span>
+          Your email <span className="text-[#94a3b8]">(optional, for follow-up only)</span>
         </label>
         <input
           id="email"

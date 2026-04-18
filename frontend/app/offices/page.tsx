@@ -4,7 +4,7 @@ import PageHeader from "@/components/PageHeader";
 export const metadata: Metadata = {
   title: "Browse by Office Type",
   description:
-    "Explore Maryland 2026 candidates by office type — federal, statewide, state legislative, and county offices.",
+    "Explore Maryland 2026 candidates by office type: federal, statewide, state legislative, and county offices.",
 };
 
 type OfficeLevel = "Federal" | "Statewide" | "State Legislative" | "County";
@@ -125,7 +125,7 @@ const offices: OfficeEntry[] = [
     name: "Circuit Court Judge",
     slug: "circuit-court-judge",
     description:
-      "Elected judges serving Maryland's circuit courts — the trial courts of general jurisdiction. Handle civil, criminal, family, and juvenile cases.",
+      "Elected judges serving Maryland's circuit courts, the trial courts of general jurisdiction. Handle civil, criminal, family, and juvenile cases.",
     scope: "Circuit (multi-county)",
     level: "County",
   },
@@ -170,7 +170,7 @@ const LEVELS: { level: OfficeLevel; description: string; color: string; bg: stri
   },
   {
     level: "State Legislative",
-    description: "Maryland General Assembly — Senate and House of Delegates",
+    description: "Maryland General Assembly: Senate and House of Delegates",
     color: "text-green-800",
     bg: "bg-green-50 border-green-200",
   },
@@ -203,7 +203,7 @@ export default function OfficesPage() {
 
       <PageHeader
         title="Browse by office type"
-        subtitle="All offices on the 2026 Maryland ballot — federal, statewide, state legislative, and county."
+        subtitle="All offices on the 2026 Maryland ballot: federal, statewide, state legislative, and county."
         breadcrumbs={[{ label: "Home", href: "/" }]}
         badge="2026 Election Cycle"
       />

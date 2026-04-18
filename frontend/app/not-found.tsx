@@ -25,7 +25,7 @@ export default function NotFound() {
         </h1>
 
         <p className="text-[#475569] mb-8 leading-relaxed">
-          This page doesn&apos;t exist — the candidate, race, or county you&apos;re
+          This page doesn&apos;t exist. The candidate, race, or county you&apos;re
           looking for may have moved or never existed in our database.
         </p>
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Thank you — MarylandIQ",
+  title: "Thank you - MarylandIQ",
 };
 
 export default function DonateSuccessPage() {

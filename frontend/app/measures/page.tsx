@@ -7,7 +7,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Ballot Measures",
-  description: "2026 Maryland statewide and local ballot measures — plain-language summaries for every proposition.",
+  description: "2026 Maryland statewide and local ballot measures. Plain-language summaries for every proposition.",
 };
 
 function formatDate(iso: string) {

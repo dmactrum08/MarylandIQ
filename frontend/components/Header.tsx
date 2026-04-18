@@ -23,7 +23,7 @@ export default function Header() {
           <a
             href="/"
             className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2"
-            aria-label="MarylandIQ — home"
+            aria-label="MarylandIQ home"
           >
             <LogoMark size={34} />
           </a>

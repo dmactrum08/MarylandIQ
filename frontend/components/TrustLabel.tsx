@@ -48,12 +48,12 @@ const VARIANTS: Record<
       "Drawn from publicly visible social media profiles. Linked to the original source so you can verify it.",
   },
   machine: {
-    label: "AI-assisted summary",
+    label: "Sourced summary",
     bg: "bg-slate-100",
     text: "text-slate-700",
     dot: "bg-slate-400",
     description:
-      "A summary generated from publicly available source material. Always linked to the evidence it came from.",
+      "A summary compiled from publicly available source material. Always linked to the evidence it came from.",
   },
 };
 

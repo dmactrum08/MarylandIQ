@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Races",
   description:
-    "Browse all 2026 Maryland election races — filter by county, office, or election type.",
+    "Browse all 2026 Maryland election races. Filter by county, office, or election type.",
 };
 
 export default async function RacesPage({
@@ -28,7 +28,7 @@ export default async function RacesPage({
     <main aria-labelledby="races-heading" className="flex-1">
       <PageHeader
         title="Browse races"
-        subtitle="All 2026 Maryland election contests — filter by county, office, or election type."
+        subtitle="All 2026 Maryland election contests. Filter by county, office, or election type."
         breadcrumbs={[{ label: "Home", href: "/" }]}
         badge="2026 Election Cycle"
       />

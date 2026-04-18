@@ -58,9 +58,9 @@ const sections = [
           <li>Maintain internal records about site performance and reliability</li>
         </ul>
         <p className="text-sm text-[#475569] leading-relaxed">
-          If MarylandIQ uses AI or other automated tools, those tools are used to summarize,
-          classify, or organize public-source information. They are not intended to make eligibility,
-          credit, employment, housing, or other legally significant decisions about users.
+          Automated tools are used to summarize, classify, or organize public-source information.
+          They are not intended to make eligibility, credit, employment, housing, or other legally
+          significant decisions about users.
         </p>
       </>
     ),
@@ -90,7 +90,7 @@ const sections = [
           <li>Office sought, party, jurisdiction, and election status</li>
           <li>Campaign website links and other public links</li>
           <li>Public statements or descriptions from official or public sources</li>
-          <li>AI-generated summaries or tags derived from public-source material</li>
+          <li>Sourced summaries or issue tags derived from public-source material</li>
         </ul>
         <p className="text-sm text-[#475569] leading-relaxed">
           If you believe a page contains inaccurate, outdated, misleading, or improperly sourced

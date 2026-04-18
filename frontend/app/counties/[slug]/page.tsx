@@ -70,6 +70,22 @@ function formatDate(iso: string) {
   });
 }
 
+/** Strip "(At-Large)" / "(At Large)" suffix so at-large contests group with district races. */
+function baseOfficeName(name: string): string {
+  return name.replace(/\s*\(At-?Large\)\s*$/i, "").trim();
+}
+
+function isAtLargeOffice(name: string): boolean {
+  return /\(At-?Large\)\s*$/i.test(name);
+}
+
+/** Label shown per contest row in the list. */
+function contestRowLabel(contest: ContestRow, groupOfficeName: string): string {
+  if (contest.district_name) return contest.district_name;
+  if (isAtLargeOffice(contest.office?.name ?? "")) return "At-Large";
+  return groupOfficeName;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function CountyPage({
@@ -157,7 +173,7 @@ export default async function CountyPage({
     if (!electionGroups.has(c.election_type)) {
       electionGroups.set(c.election_type, new Map());
     }
-    const officeKey = c.office?.name ?? "Unknown office";
+    const officeKey = baseOfficeName(c.office?.name ?? "Unknown office");
     const officeMap = electionGroups.get(c.election_type)!;
     if (!officeMap.has(officeKey)) officeMap.set(officeKey, []);
     officeMap.get(officeKey)!.push(c);
@@ -173,9 +189,13 @@ export default async function CountyPage({
       const officeMap = electionGroups.get(electionType)!;
       const officeGroups: OfficeGroup[] = [];
       for (const [officeName, officeContests] of officeMap) {
+        // Prefer the non-at-large office slug for the "About this office" link
+        const baseContest = officeContests.find(
+          (c) => !isAtLargeOffice(c.office?.name ?? "")
+        ) ?? officeContests[0];
         officeGroups.push({
           office_name: officeName,
-          office_slug: officeContests[0].office?.slug ?? "",
+          office_slug: baseContest.office?.slug ?? "",
           election_type: electionType,
           election_date: officeContests[0].election_date,
           contests: officeContests,
@@ -258,7 +278,7 @@ export default async function CountyPage({
                                 >
                                   <div className="min-w-0">
                                     <p className="text-sm font-medium text-[#0F172A] group-hover:text-[#CC0000] transition-colors">
-                                      {contest.district_name ?? group.office_name}
+                                      {contestRowLabel(contest, group.office_name)}
                                     </p>
                                     <p className="text-xs text-[#94a3b8] mt-0.5">
                                       {contest.seats_available === 1

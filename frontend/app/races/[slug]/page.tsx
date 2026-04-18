@@ -51,7 +51,7 @@ export async function generateMetadata({
   const electionLabel = data.election_type === "primary" ? "2026 Primary" : "2026 General";
 
   return {
-    title: `${office?.name ?? "Race"}${district} — ${jurisdiction?.name ?? "Maryland"}`,
+    title: `${office?.name ?? "Race"}${district} - ${jurisdiction?.name ?? "Maryland"}`,
     description: `${electionLabel} candidates for ${office?.name ?? "this office"}${district} in ${jurisdiction?.name ?? "Maryland"}.`,
   };
 }
@@ -93,25 +93,6 @@ function formatDate(iso: string) {
 function truncate(text: string, maxLen = 180) {
   if (text.length <= maxLen) return text;
   return text.slice(0, text.lastIndexOf(" ", maxLen)) + "…";
-}
-
-function CompletenessBar({ score }: { score: number }) {
-  const label =
-    score >= 80 ? "Rich profile" : score >= 40 ? "Partial profile" : "Thin profile";
-  const color =
-    score >= 80 ? "bg-green-500" : score >= 40 ? "bg-amber-400" : "bg-slate-300";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${color}`}
-          style={{ width: `${score}%` }}
-          aria-hidden="true"
-        />
-      </div>
-      <span className="text-xs text-[#94a3b8]">{label}</span>
-    </div>
-  );
 }
 
 // ─── Candidate card ───────────────────────────────────────────────────────────
@@ -159,7 +140,6 @@ function CandidateCard({ candidate }: { candidate: CandidateWithEnrichment }) {
                   {candidate.party}
                 </span>
               )}
-              <CompletenessBar score={candidate.completeness_score} />
             </div>
           </div>
           <a
@@ -186,7 +166,7 @@ function CandidateCard({ candidate }: { candidate: CandidateWithEnrichment }) {
           </div>
         ) : (
           <p className="text-sm text-[#94a3b8] italic">
-            No verified public presence found — no campaign website or public profile available.
+            No verified public presence found. No campaign website or public profile available.
           </p>
         )}
 

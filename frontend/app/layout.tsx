@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "MarylandIQ — Maryland Voter Research for Local Elections",
+    default: "MarylandIQ - Maryland Voter Research for Local Elections",
     template: "%s | MarylandIQ",
   },
   description:
-    "Free, sourced voter research for Maryland local elections — school board, county council, sheriff, and more. Find any candidate, any county. No account required.",
+    "Free, sourced voter research for Maryland local elections: school board, county council, sheriff, and more. Find any candidate, any county. No account required.",
   metadataBase: new URL("https://marylandiq.org"),
   openGraph: {
     siteName: "MarylandIQ",

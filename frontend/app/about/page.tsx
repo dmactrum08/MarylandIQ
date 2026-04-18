@@ -29,8 +29,8 @@ export default function AboutPage() {
             <div className="prose-like space-y-4">
               <p className="text-sm text-[#475569] leading-relaxed">
                 MarylandIQ is a free, independent voter research tool built for Maryland local
-                elections. It covers county-level races — school board, county council, sheriff,
-                state&apos;s attorney, register of wills, and more — as well as statewide and
+                elections. It covers county-level races including school board, county council, sheriff,
+                state&apos;s attorney, register of wills, and more, as well as statewide and
                 federal offices on the 2026 ballot.
               </p>
               <p className="text-sm text-[#475569] leading-relaxed">
@@ -48,25 +48,15 @@ export default function AboutPage() {
             </h2>
             <div className="space-y-4">
               <p className="text-sm text-[#475569] leading-relaxed">
-                Maryland publishes a lot of election data — but it&apos;s scattered across different
+                Maryland publishes a lot of election data, but it&apos;s scattered across different
                 agencies, counties, and formats. None of it is connected or easy for a typical voter
                 to navigate.
               </p>
               <p className="text-sm text-[#475569] leading-relaxed">
                 A voter researching their county council race might find a partial listing on a
-                third-party site, a document from the county board, and a blank campaign website —
+                third-party site, a document from the county board, and a blank campaign website,
                 or nothing at all. MarylandIQ pulls it together in one place.
               </p>
-              <div className="bg-[#F8FAFC] border border-gray-200 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-[#0F172A] mb-2">Local candidates with limited information</h3>
-                <p className="text-sm text-[#475569] leading-relaxed">
-                  Many local candidates filed with the state but have no campaign website and have
-                  never been covered by local news. Rather than leave those pages blank, MarylandIQ
-                  looks for public social media profiles and clearly labels everything it finds.
-                  If there&apos;s genuinely nothing to show, the page says so — that&apos;s honest
-                  and useful information too.
-                </p>
-              </div>
             </div>
           </section>
 
@@ -158,9 +148,9 @@ export default function AboutPage() {
                 },
                 {
                   variant: "machine" as const,
-                  title: "AI-assisted summary",
+                  title: "Sourced summary",
                   description:
-                    "A summary generated from publicly available source material, with links to that material. Official data always takes precedence — summaries fill gaps, they don't replace facts.",
+                    "A summary compiled from publicly available source material, with links to that material. Official data always takes precedence. Summaries fill gaps, they don't replace facts.",
                 },
               ].map(({ variant, title, description }) => (
                 <div key={variant} className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl">
@@ -192,9 +182,9 @@ export default function AboutPage() {
             <ul className="space-y-3">
               {[
                 "Access voter registration files or any restricted government data.",
-                "Store your address. Geocoding is ephemeral — only the derived precinct ID is held in session.",
+                "Store your address. Geocoding is ephemeral. Only the derived precinct ID is held in session.",
                 "Generate candidate positions not grounded in something they actually said or published.",
-                "Display AI-generated content in comparison tables — only evidence-linked content appears there.",
+                "Display content in comparison tables that isn't directly linked to evidence.",
                 "Endorse, rank, or editorialize about any candidate.",
                 "Sell or share user data with third parties for commercial purposes.",
               ].map((item) => (

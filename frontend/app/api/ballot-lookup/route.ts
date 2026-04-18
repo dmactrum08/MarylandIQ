@@ -203,7 +203,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Address not found. Try adding your city and zip code — e.g. \"10 Main St, Rockville, MD 20850\".",
+              "Address not found. Try adding your city and zip code, e.g. \"10 Main St, Rockville, MD 20850\".",
           },
           { status: 422 }
         );
@@ -254,7 +254,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "No Maryland precinct found for that address. Make sure it's a Maryland address — other states aren't supported yet.",
+          "No Maryland precinct found for that address. Make sure it's a Maryland address. Other states are not supported yet.",
       },
       { status: 404 }
     );

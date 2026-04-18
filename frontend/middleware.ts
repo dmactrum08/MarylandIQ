@@ -72,7 +72,7 @@ export function middleware(req: NextRequest) {
 
   if (entry.count > limit) {
     return NextResponse.json(
-      { error: "Too many requests — please wait a moment and try again." },
+      { error: "Too many requests. Please wait a moment and try again." },
       {
         status: 429,
         headers: {

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Browse Candidates",
   description:
-    "All active 2026 Maryland candidates — search by name, county, office, or party.",
+    "All active 2026 Maryland candidates. Search by name, county, office, or party.",
 };
 
 export default async function CandidatesPage({
@@ -29,7 +29,7 @@ export default async function CandidatesPage({
     <main aria-labelledby="candidates-heading" className="flex-1">
       <PageHeader
         title="Browse candidates"
-        subtitle="All active 2026 candidates across Maryland — search by name, county, office, or party."
+        subtitle="All active 2026 candidates across Maryland. Search by name, county, office, or party."
         breadcrumbs={[{ label: "Home", href: "/" }]}
         badge="2026 Election Cycle"
       />

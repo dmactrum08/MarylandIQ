@@ -28,8 +28,8 @@ const sections = [
       <p className="text-sm text-[#475569] leading-relaxed">
         MarylandIQ is independent and is not endorsed by, operated by, or affiliated with the
         Maryland State Board of Elections, any county board of elections, or any government agency
-        unless explicitly stated. Users should verify critical election information — including
-        registration status, polling location, filing status, deadlines, and official ballot content —
+        unless explicitly stated. Users should verify critical election information (including
+        registration status, polling location, filing status, deadlines, and official ballot content)
         with the appropriate official election authority.
       </p>
     ),

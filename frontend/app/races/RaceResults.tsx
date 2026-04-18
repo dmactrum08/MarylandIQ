@@ -176,7 +176,7 @@ export default function RaceResults({
                         href={`/races/${c.slug}`}
                         className="font-medium text-[#0F172A] group-hover:text-[#CC0000] transition-colors focus:outline-none focus:underline"
                       >
-                        {c.office_name ?? "—"}
+                        {c.office_name ?? "Unknown office"}
                         {c.district_name && (
                           <span className="text-[#94a3b8] font-normal"> · {c.district_name}</span>
                         )}
@@ -191,7 +191,7 @@ export default function RaceResults({
                           {c.jurisdiction_name}
                         </a>
                       ) : (
-                        <span className="text-[#94a3b8]">—</span>
+                        <span className="text-[#94a3b8]">N/A</span>
                       )}
                     </td>
                     <td className="px-4 py-3">

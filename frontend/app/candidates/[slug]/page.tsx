@@ -271,34 +271,34 @@ export default async function CandidatePage({
                 </section>
               )}
 
-              {/* AI Summary */}
-              <section aria-labelledby="summary-heading">
-                <SectionHeader label={<TrustLabel variant="machine" />}>
-                  About this candidate
-                </SectionHeader>
-                {hasAiSummary ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-[#0F172A] leading-relaxed">{enrichment!.ai_summary}</p>
-                    {(enrichment!.ai_summary_sources as AiSummarySource[]).length > 0 && (
-                      <p className="text-xs text-[#94a3b8]">
-                        Sources:{" "}
-                        {(enrichment!.ai_summary_sources as AiSummarySource[]).map((s, i) => (
-                          <span key={s.url}>
-                            {i > 0 && ", "}
-                            <ExternalLink href={s.url}>{s.label}</ExternalLink>
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                  </div>
-                ) : hasSocialInference ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-[#0F172A] leading-relaxed">{enrichment!.social_inference_text}</p>
-                  </div>
-                ) : (
-                  <NoInfoBox message="No public information found beyond the official filing. This candidate does not appear to have a campaign website or public social media presence." />
-                )}
-              </section>
+              {/* Summary */}
+              {(hasAiSummary || hasSocialInference) && (
+                <section aria-labelledby="summary-heading">
+                  <SectionHeader label={<TrustLabel variant="machine" />}>
+                    About this candidate
+                  </SectionHeader>
+                  {hasAiSummary ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-[#0F172A] leading-relaxed">{enrichment!.ai_summary}</p>
+                      {(enrichment!.ai_summary_sources as AiSummarySource[]).length > 0 && (
+                        <p className="text-xs text-[#94a3b8]">
+                          Sources:{" "}
+                          {(enrichment!.ai_summary_sources as AiSummarySource[]).map((s, i) => (
+                            <span key={s.url}>
+                              {i > 0 && ", "}
+                              <ExternalLink href={s.url}>{s.label}</ExternalLink>
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-[#0F172A] leading-relaxed">{enrichment!.social_inference_text}</p>
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* In their own words */}
               {hasCampaignVoice && (
@@ -396,11 +396,11 @@ export default async function CandidatePage({
               )}
 
               {/* Issue tags */}
-              <section aria-labelledby="tags-heading">
-                <SectionHeader label={<TrustLabel variant="machine" />}>
-                  Issue areas
-                </SectionHeader>
-                {hasIssueTags ? (
+              {hasIssueTags && (
+                <section aria-labelledby="tags-heading">
+                  <SectionHeader label={<TrustLabel variant="machine" />}>
+                    Issue areas
+                  </SectionHeader>
                   <div className="space-y-4">
                     <div className="flex flex-wrap gap-2" role="list" aria-label="Issue tags">
                       {(enrichment!.issue_tags).map((tag: string) => (
@@ -436,10 +436,8 @@ export default async function CandidatePage({
                       </div>
                     </details>
                   </div>
-                ) : (
-                  <NoInfoBox message="No issue areas identified. No public statements or campaign material were available." />
-                )}
-              </section>
+                </section>
+              )}
 
             </div>
 
@@ -525,14 +523,14 @@ export default async function CandidatePage({
               </div>
 
               {/* Campaign links */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-[#F8FAFC] border-b border-gray-200">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">
-                    Campaign presence
-                  </h2>
-                  <TrustLabel variant="candidate" />
-                </div>
-                {hasSocialLinks ? (
+              {hasSocialLinks && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-[#F8FAFC] border-b border-gray-200">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">
+                      Campaign presence
+                    </h2>
+                    <TrustLabel variant="candidate" />
+                  </div>
                   <ul className="divide-y divide-gray-100">
                     {hasWebsite && (
                       <li className="px-4 py-3">
@@ -577,12 +575,8 @@ export default async function CandidatePage({
                       </li>
                     )}
                   </ul>
-                ) : (
-                  <div className="px-4 py-3">
-                    <p className="text-sm text-[#94a3b8] italic">No campaign website or public social media found.</p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* View race */}
               {contest && (

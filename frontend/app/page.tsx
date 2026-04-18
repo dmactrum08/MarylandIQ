@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { MD_JURISDICTIONS, MD_OFFICES } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: "MarylandIQ — Maryland Voter Research for Local Elections",
+  title: "MarylandIQ - Maryland Voter Research for Local Elections",
   description:
-    "Free, sourced voter research for Maryland local elections — school board, county council, sheriff, and more. Find any candidate, any county. No account required.",
+    "Free, sourced voter research for Maryland local elections: school board, county council, sheriff, and more. Find any candidate, any county. No account required.",
 };
 
 export default function Home() {
@@ -35,7 +35,7 @@ export default function Home() {
               </h1>
 
               <p className="text-lg text-slate-300 leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0">
-                Free, sourced voter research for Maryland local elections — school board,
+                Free, sourced voter research for Maryland local elections: school board,
                 county council, sheriff, and more. Find any candidate, any county.
                 No account required.
               </p>
@@ -83,7 +83,7 @@ export default function Home() {
                   <h2 className="text-base font-semibold text-[#0F172A]">Find your ballot</h2>
                 </div>
                 <p className="text-sm text-[#64748b] mb-4 ml-7">
-                  Enter your Maryland address — or just a city name — to see every race on your ballot.
+                  Enter your Maryland address, or just a city name, to see every race on your ballot.
                 </p>
 
                 <form action="/ballot" method="GET" role="search" aria-label="Ballot lookup by address">
@@ -226,7 +226,7 @@ export default function Home() {
                 Browse by office type
               </h2>
               <p className="text-[#475569]">
-                Federal, statewide, state legislative, and county offices — all on the 2026 ballot.
+                Federal, statewide, state legislative, and county offices. All on the 2026 ballot.
               </p>
             </div>
             <a
@@ -270,7 +270,7 @@ export default function Home() {
               How MarylandIQ works
             </h2>
             <p className="text-[#475569] max-w-xl mx-auto">
-              Research any candidate or race on your 2026 Maryland ballot — local offices, county races, and more.
+              Research any candidate or race on your 2026 Maryland ballot: local offices, county races, and more.
             </p>
           </div>
 
@@ -284,12 +284,12 @@ export default function Home() {
               {
                 n: "2",
                 title: "Read sourced profiles",
-                body: "Every candidate page brings together official filing records, campaign information, and a sourced summary. Every candidate gets a complete page — not a blank.",
+                body: "Every candidate page brings together official filing records, campaign information, and a sourced summary. Every candidate gets a complete page, not a blank.",
               },
               {
                 n: "3",
                 title: "Know where it came from",
-                body: "Every piece of information is labeled with its source. If we couldn't find information about a candidate, the page says so directly — nothing is hidden.",
+                body: "Every piece of information is labeled with its source. If we couldn't find information about a candidate, the page says so directly. Nothing is hidden.",
               },
             ].map(({ n, title, body }) => (
               <li key={n} className="flex flex-col items-center text-center sm:items-start sm:text-left">
@@ -325,7 +325,7 @@ export default function Home() {
               <p className="text-sm text-[#92400E] leading-relaxed max-w-2xl">
                 MarylandIQ is not affiliated with any political party, government agency, or campaign.
                 We do not store your address. We do not sell data.
-                Every inference is labeled. Official data always takes precedence over AI output.
+                Every piece of information is labeled with its source. Official data always takes precedence.
               </p>
             </div>
             <div className="shrink-0 sm:ml-auto flex flex-col items-center sm:items-end gap-3">
