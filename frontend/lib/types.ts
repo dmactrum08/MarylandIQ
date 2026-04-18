@@ -237,6 +237,7 @@ export const MD_OFFICES: Pick<Office, "name" | "slug">[] = [
   // County
   { name: "County Executive", slug: "county-executive" },
   { name: "County Council Member", slug: "county-council-member" },
+  { name: "County Commissioner", slug: "county-commissioner" },
   { name: "Board of Education Member", slug: "board-of-education-member" },
   { name: "Sheriff", slug: "sheriff" },
   { name: "State's Attorney", slug: "states-attorney" },
