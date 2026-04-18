@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MD_JURISDICTIONS, MD_OFFICES } from "@/lib/types";
+import AdSlot from "@/components/AdSlot";
 
 export const metadata: Metadata = {
   title: "MarylandIQ - Maryland Voter Research for Local Elections",
@@ -215,6 +216,8 @@ export default function Home() {
         </div>
       </section>
 
+      <AdSlot />
+
       {/* ══════════════════════════════════════════
           BROWSE BY OFFICE
       ══════════════════════════════════════════ */}
@@ -324,8 +327,7 @@ export default function Home() {
               </h2>
               <p className="text-sm text-[#92400E] leading-relaxed max-w-2xl">
                 MarylandIQ is not affiliated with any political party, government agency, or campaign.
-                We do not store your address. We do not sell data.
-                Every piece of information is labeled with its source. Official data always takes precedence.
+                We do not store your address. We do not sell data. Official data always takes precedence.
               </p>
             </div>
             <div className="shrink-0 sm:ml-auto flex flex-col items-center sm:items-end gap-3">

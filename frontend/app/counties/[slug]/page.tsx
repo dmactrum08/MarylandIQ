@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase-server";
 import PageHeader from "@/components/PageHeader";
 import TrustLabel from "@/components/TrustLabel";
+import AdSlot from "@/components/AdSlot";
 import { MD_JURISDICTIONS } from "@/lib/types";
 import type { Jurisdiction, Contest, Office } from "@/lib/types";
 
@@ -472,6 +473,9 @@ export default async function CountyPage({
 
             </aside>
           </div>
+
+          <AdSlot />
+
         </div>
       </div>
 
