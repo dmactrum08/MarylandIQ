@@ -418,17 +418,19 @@ export default async function CandidatePage({
                     </div>
                     <div className="pl-8 space-y-3">
                       <p className="text-sm text-[#475569]">
-                        <span className="font-medium text-[#0F172A]">Are you this candidate?</span> Submit your campaign website or social media links and we&apos;ll generate a profile within 24&nbsp;hours.
+                        <span className="font-medium text-[#0F172A]">Are you this candidate?</span>{" "}Submit your campaign website, social media links, or a brief summary and we&apos;ll get your profile updated within 24&nbsp;hours.
                       </p>
-                      <a
-                        href={`/report?page=/candidates/${slug}&type=candidate-info`}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#CC0000] text-white text-sm font-medium rounded-lg hover:bg-[#AA0000] transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2"
-                      >
-                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        Submit candidate information
-                      </a>
+                      <div className="flex flex-wrap gap-3">
+                        <a
+                          href={`/report?page=/candidates/${slug}&type=candidate-info`}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#CC0000] text-white text-sm font-medium rounded-lg hover:bg-[#AA0000] transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2"
+                        >
+                          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                          Submit links or summary
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </section>
