@@ -13,11 +13,13 @@ export function CandidatesFilterForm({
   county,
   office,
   party,
+  incumbent,
 }: {
   q: string;
   county: string;
   office: string;
   party: string;
+  incumbent: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -25,11 +27,12 @@ export function CandidatesFilterForm({
 
   function buildUrl(overrides: Record<string, string>) {
     const params = new URLSearchParams();
-    const values = { q, county, office, party, ...overrides };
+    const values = { q, county, office, party, incumbent: incumbent ? "1" : "", ...overrides };
     if (values.q) params.set("q", values.q);
     if (values.county) params.set("county", values.county);
     if (values.office) params.set("office", values.office);
     if (values.party && values.party !== "All") params.set("party", values.party);
+    if (values.incumbent === "1") params.set("incumbent", "1");
     const qs = params.toString();
     return `/candidates${qs ? `?${qs}` : ""}`;
   }
@@ -44,7 +47,7 @@ export function CandidatesFilterForm({
     debounceRef.current = setTimeout(() => navigate({ q: val }), 400);
   }
 
-  const hasFilters = !!(q || county || office || party);
+  const hasFilters = !!(q || county || office || party || incumbent);
 
   return (
     <div className={`bg-[#F8FAFC] border border-gray-200 rounded-xl p-4 transition-opacity ${isPending ? "opacity-60" : ""}`}>
@@ -102,7 +105,7 @@ export function CandidatesFilterForm({
       </div>
 
       <div className="flex items-center gap-3 mt-3">
-        {/* Party pills */}
+        {/* Party pills + incumbent toggle */}
         <div className="flex items-center gap-2 flex-wrap flex-1">
           <span className="text-xs font-medium text-[#475569]">Party:</span>
           {PARTIES.map((p) => (
@@ -119,6 +122,21 @@ export function CandidatesFilterForm({
               {p}
             </button>
           ))}
+          <span className="w-px h-4 bg-gray-200 mx-1" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => navigate({ incumbent: incumbent ? "" : "1" })}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-1 ${
+              incumbent
+                ? "bg-slate-700 text-white border-slate-700"
+                : "bg-white text-[#475569] border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Incumbents only
+          </button>
         </div>
 
         {hasFilters && (

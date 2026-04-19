@@ -10,6 +10,7 @@ export interface CandidateResult {
   slug: string;
   full_name: string;
   party: string | null;
+  is_incumbent: boolean;
   completeness_score: number;
   contest_slug: string | null;
   election_type: string | null;
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
   const county = searchParams.get("county")?.trim() ?? "";
   const office = searchParams.get("office")?.trim() ?? "";
   const party = searchParams.get("party")?.trim() ?? "";
+  const incumbentOnly = searchParams.get("incumbent") === "1";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
     .from("candidates")
     .select(
       `
-      id, slug, full_name, party, completeness_score,
+      id, slug, full_name, party, is_incumbent, completeness_score,
       contest:contests!inner(
         slug, election_type, district_name,
         office:offices!inner(name, slug),
@@ -61,6 +63,7 @@ export async function GET(req: NextRequest) {
 
   if (q) query = query.ilike("full_name", `%${q}%`);
   if (party) query = query.eq("party", party);
+  if (incumbentOnly) query = query.eq("is_incumbent", true);
   if (county) query = query.eq("contests.jurisdictions.slug", county);
   if (office) query = query.eq("contests.offices.slug", office);
 
@@ -80,6 +83,7 @@ export async function GET(req: NextRequest) {
       slug: row.slug,
       full_name: row.full_name,
       party: row.party ?? null,
+      is_incumbent: row.is_incumbent ?? false,
       completeness_score: row.completeness_score ?? 0,
       contest_slug: contest?.slug ?? null,
       election_type: contest?.election_type ?? null,

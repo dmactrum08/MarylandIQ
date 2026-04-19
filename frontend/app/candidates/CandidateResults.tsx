@@ -28,12 +28,14 @@ export default function CandidateResults({
   county,
   office,
   party,
+  incumbent,
   page,
 }: {
   q: string;
   county: string;
   office: string;
   party: string;
+  incumbent: boolean;
   page: number;
 }) {
   const router = useRouter();
@@ -51,6 +53,7 @@ export default function CandidateResults({
     if (county) params.set("county", county);
     if (office) params.set("office", office);
     if (party) params.set("party", party);
+    if (incumbent) params.set("incumbent", "1");
     if (page > 1) params.set("page", String(page));
 
     fetch(`/api/candidates?${params.toString()}`)
@@ -66,7 +69,7 @@ export default function CandidateResults({
         setError(true);
         setLoading(false);
       });
-  }, [q, county, office, party, page]);
+  }, [q, county, office, party, incumbent, page]);
 
   function pageUrl(p: number) {
     const params = new URLSearchParams();
@@ -74,6 +77,7 @@ export default function CandidateResults({
     if (county) params.set("county", county);
     if (office) params.set("office", office);
     if (party && party !== "All") params.set("party", party);
+    if (incumbent) params.set("incumbent", "1");
     if (p > 1) params.set("page", String(p));
     const qs = params.toString();
     return `/candidates${qs ? `?${qs}` : ""}`;
@@ -110,7 +114,7 @@ export default function CandidateResults({
   if (!data) return null;
 
   const { candidates, total, page: currentPage, page_size } = data;
-  const hasFilters = !!(q || county || office || party);
+  const hasFilters = !!(q || county || office || party || incumbent);
   const totalPages = Math.ceil(total / page_size);
   const offset = (currentPage - 1) * page_size;
   const showing = candidates.length;
@@ -189,6 +193,11 @@ export default function CandidateResults({
                       >
                         {c.full_name}
                       </a>
+                      {c.is_incumbent && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-700 text-white align-middle">
+                          Incumbent
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[#475569] truncate">
                       {c.office_name ? (
@@ -252,8 +261,13 @@ export default function CandidateResults({
                   className="flex items-start justify-between gap-3 p-4 border border-gray-200 rounded-xl hover:border-[#CC0000] hover:bg-[#FFF5F5] transition-all group focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[#0F172A] group-hover:text-[#CC0000] transition-colors">
+                    <p className="text-sm font-semibold text-[#0F172A] group-hover:text-[#CC0000] transition-colors flex items-center gap-2 flex-wrap">
                       {c.full_name}
+                      {c.is_incumbent && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-700 text-white">
+                          Incumbent
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-[#475569] mt-0.5">
                       {c.office_name ?? "Unknown office"}

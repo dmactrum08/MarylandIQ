@@ -23,6 +23,7 @@ export default async function CandidatesPage({
   const county = typeof sp.county === "string" ? sp.county.trim() : "";
   const office = typeof sp.office === "string" ? sp.office.trim() : "";
   const party = typeof sp.party === "string" ? sp.party.trim() : "";
+  const incumbent = sp.incumbent === "1";
   const page = Math.max(1, parseInt(typeof sp.page === "string" ? sp.page : "1", 10));
 
   return (
@@ -36,10 +37,10 @@ export default async function CandidatesPage({
 
       <div className="bg-white flex-1">
         <div className="max-w-6xl 2xl:max-w-[1280px] 3xl:max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-          <CandidatesFilterForm q={q} county={county} office={office} party={party} />
+          <CandidatesFilterForm q={q} county={county} office={office} party={party} incumbent={incumbent} />
 
           <Suspense fallback={<ResultsSkeleton />}>
-            <CandidateResults q={q} county={county} office={office} party={party} page={page} />
+            <CandidateResults q={q} county={county} office={office} party={party} incumbent={incumbent} page={page} />
           </Suspense>
 
           <AdSlot />
