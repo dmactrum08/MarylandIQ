@@ -1,17 +1,1549 @@
 {
-  "_instructions": "Add one entry per incumbent. 'office_slug' must match a slug in your offices table (e.g. 'county-executive', 'county-council-member', 'sheriff', 'states-attorney', 'board-of-education', etc.). 'district_name' should match the district_name in your contests table exactly, or null for county-wide offices. 'jurisdiction_slug' must match a slug in your jurisdictions table.",
+  "_instructions": "Add one entry per incumbent. Set district_name to null for county-wide offices. For district offices use the exact string stored in your contests table.",
+  "_coverage_notes": {
+    "sources": [
+      "Maryland Courts – Circuit Court Clerks directory and county clerk pages",
+      "Maryland Register of Wills – current directory of Register of Wills offices",
+      "Maryland State's Attorneys' Association – current directory",
+      "Official county executive/council/commissioner pages and county news releases",
+      "Official sheriff office / county pages and Maryland State Board of Elections 2026 candidate filings (supplemental current-office confirmation)"
+    ],
+    "offices_covered": [
+      "county-executive",
+      "county-council-member",
+      "county-council-at-large",
+      "county-commissioner",
+      "sheriff",
+      "states-attorney",
+      "clerk-of-circuit-court",
+      "register-of-wills"
+    ],
+    "offices_NOT_yet_researched": [
+      "board-of-education",
+      "orphans-court-judge",
+      "circuit-court-judge",
+      "county-treasurer"
+    ],
+    "uncertain_entries": [
+      "Washington County commissioner vacancy: Derek Harvey resigned effective 2026-02-24; official county roster viewed 2026-04-19 listed John F. Barr, Jeffrey A. Cline, Randall E. Wagner, and Randal Leatherman, with no fifth seated commissioner shown."
+    ]
+  },
+  "_office_slugs": {
+    "county_level": [
+      "county-executive",
+      "county-council-member",
+      "county-council-at-large",
+      "county-commissioner",
+      "board-of-education",
+      "sheriff",
+      "states-attorney",
+      "register-of-wills",
+      "clerk-of-circuit-court",
+      "circuit-court-judge",
+      "orphans-court-judge",
+      "county-treasurer"
+    ]
+  },
   "incumbents": [
     {
-      "full_name": "Jane Smith",
+      "full_name": "Bill Atkinson",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Creade V. Brodie Jr.",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "David J. Caporale",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "James F. Elliott",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Craig Robertson",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Steuart Pittman",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Pete Smith",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Allison M. Pickard",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Nathan Volke",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Julie Hummer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Amanda Fiedler",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Lisa D. B. Rodvien",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Shannon Leadbetter",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Anne Colt Leitess",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Everett Sesker",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Zeke Cohen",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": null
+    },
+    {
+      "full_name": "Mark Parker",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Danielle McCray",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Ryan Dorsey",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Mark Conway",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Isaac Schleifer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Sharon Green Middleton",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "James Torrence",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Paris Gray",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 8"
+    },
+    {
+      "full_name": "John Bullock",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 9"
+    },
+    {
+      "full_name": "Phylicia Porter",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 10"
+    },
+    {
+      "full_name": "Zac Blanchard",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 11"
+    },
+    {
+      "full_name": "Jermaine Jones",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 12"
+    },
+    {
+      "full_name": "Antonio Glover",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 13"
+    },
+    {
+      "full_name": "Odette Ramos",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": "District 14"
+    },
+    {
+      "full_name": "Ivan J. Bates",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": null
+    },
+    {
+      "full_name": "Sam Cogen",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": null
+    },
+    {
+      "full_name": "Katherine A. Klausmeier",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Patrick Young",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Izzy Patoka",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "A. Wade Kach",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Julian Jones",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "David Marks",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Mike Ertel",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Todd Crandell",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "R. Jay Fisher",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Scott Shellenberger",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Earl Hance",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Todd Ireland",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Michael Hart",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Mark Cox",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Catherine Grasso",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Bob Harvey",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Ricky Cox",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": null
+    },
+    {
+      "full_name": "J. Travis Breeding",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Larry C. Porter",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "N. Franklin Bartz",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Sloane Franklin",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Donnie Baker",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Joe Vigliotti",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Kenneth Kiler",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Tom Gordon",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Michael Guerin",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Haven Shoemaker",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jim DeWees",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Adam Streight",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Bob Meffley",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Rebecca Hamilton",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Al Miller",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Donna Culberson",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Dawn Branch",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "James Dellmyer",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Scott A. Adams",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Reuben B. Collins II",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "charles-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Gilbert O. Bowling III",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Thomasina O. Coates",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Amanda M. Stewart",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Ralph E. Patterson II",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Anthony Covington",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "charles-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Troy Berry",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "charles-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Rob Kramer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "William V. Nichols",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Richard C. Travers",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "George Pfeffer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Mike Detmer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Amanda Rae Leonard",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "James W. Phillips Jr.",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jessica Fitzwater",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jerry Donald",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Steve McKay",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "MC Keegan-Ayer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Kavonte Duckett",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Mason Carter",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Brad Young",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Renee Knapp",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Charlie Smith",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Chuck Jenkins",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Paul C. Edwards",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Ryan Savage",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "S. Larry Tichnell",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Christian Mash",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Bryson Meyers",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Bob Cassilly",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "harford-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Patrick S. Vincenti",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "harford-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Tony Giangiordano",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District C"
+    },
+    {
+      "full_name": "James Reilly",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District D"
+    },
+    {
+      "full_name": "Jessica Boyle-Tsottles",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District E"
+    },
+    {
+      "full_name": "Jacob Bennett",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District F"
+    },
+    {
+      "full_name": "Alison M. Healey",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "harford-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jeffrey R. Gahler",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "harford-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Calvin Ball",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "howard-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Liz Walsh",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "howard-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Opel Jones",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "howard-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Christiana Rigby",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "howard-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Deb Jung",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "howard-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "David Yungmann",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "howard-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Rich Gibson",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "howard-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Marcus Harris",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "howard-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Albert Nickerson",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Ronald H. Fithian",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "John F. Price IV",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Bryan DiGregory",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Dennis W. Hickman Jr.",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Marc Elrich",
       "office_slug": "county-executive",
       "jurisdiction_slug": "montgomery-county",
       "district_name": null
     },
     {
-      "full_name": "John Doe",
+      "full_name": "Andrew Friedson",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Marilyn Balcombe",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Sidney Katz",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Kate Stewart",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Kristin Mink",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Natali Fani-González",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Dawn Luedtke",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Evan Glass",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Will Jawando",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Laurie-Anne Sayles",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "John McCarthy",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Maxwell Cornelius Uy",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Aisha Braveboy",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Thomas E. Dernoga",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Wanika Fisher",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Eric Olson",
       "office_slug": "county-council-member",
       "jurisdiction_slug": "prince-georges-county",
       "district_name": "District 3"
+    },
+    {
+      "full_name": "Shayla Adams-Stafford",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Krystal Oriadha",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Edward Burroughs III",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 8"
+    },
+    {
+      "full_name": "Sydney J. Harrison",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 9"
+    },
+    {
+      "full_name": "Tara H. Jackson",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "John D.B. Carr",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jack Wilson Jr.",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Patrick McLaughlin",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Philip L. Dumenil",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Christopher M. Corchiarino",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "James Moran",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Lance G. Richardson",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Gary Hofmann",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": null
+    },
+    {
+      "full_name": "James R. Guy",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Eric Colvin",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Michael L. Hewitt",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Michael R. Alderson Jr.",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Scott Ostrow",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Jaymi Sterling",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Steve A. Hall",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Craig N. Mathies Sr.",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Darryl Webster",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Eldon Willing",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Charles Laird",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Randy Laird",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Wess Garner",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Ronald Howard",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Chuck Callahan",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Pete Lesher",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Dave Stepp",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Lynn Mielke",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Keasha N. Haythe",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Joseph Coale",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Joe Gamble",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "John Barr",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jeffrey Cline",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Randall Wagner",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Gina M. Cirincion",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Brian Albert",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Julie Giordano",
+      "office_slug": "county-executive",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "John Cannon",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Shanie Shields",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Jeff Merritt",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Josh Hastings",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Joseph Holloway",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "James Winn",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jamie Dykes",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Mike Lewis",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Caryn Abbott",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Diana Purnell",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Eric Fiori",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Ted Elder",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Chip Bertino",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Madison J. Bunting Jr.",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Joseph Mitrecic",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Kris Heiser",
+      "office_slug": "states-attorney",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Matthew Crisafulli",
+      "office_slug": "sheriff",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Timothy J. Adams",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Danielle I. Hunter",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Wala Blegay",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jolene Ivey",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Shebra Evans",
+      "office_slug": "county-council-at-large",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Nolanda Y. Robert",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District A"
+    },
+    {
+      "full_name": "Alison Imhoff",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District B"
+    },
+    {
+      "full_name": "Susan Wolf Krebs",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": "District 5"
+    },
+    {
+      "full_name": "Randal Leatherman",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "David Ennis",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Dawne D. Lindsey",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Scott A. Poyer",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Xavier A. Conaway",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": null
+    },
+    {
+      "full_name": "Julie L. Ensor",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Kathy P. Smith",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Terry B. Lord",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Heather S. DeWees",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Charlene M. Notarcola",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Lisa E. Yates",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "charles-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Amy J. Craig",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Sandra K. Dalton",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "William L. Bittinger",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Michelle L. Karczeski",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "harford-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Wayne A. Robey",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "howard-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Sherise L. Kennard",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Karen A. Bushell",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Mahasin S. El Amin",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Katherine Beane Hager",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Debra J. Mills Burch",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Charles T. Horner",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Kathi Dulin Duvall",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Kevin R. Tucker",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "James B. McAllister",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Susan R. Braniecki",
+      "office_slug": "clerk-of-circuit-court",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Mary Beth Pirolozzi",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Jasmine M. Jackson",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "anne-arundel-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Belinda K. Conaway",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "baltimore-city",
+      "district_name": null
+    },
+    {
+      "full_name": "Alexis Burrell-Rohde",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Margaret H. Phipps",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Linda A. Dunn",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "caroline-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Paul G. Zimmermann",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "carroll-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Allyn L. Nickle",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Loraine D. Hennessy",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "charles-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Terry D. Wheatley",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Mary C. Rolle",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Rita L. Watson",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Derek K. Hopkins",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "harford-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Byron E. Macfarlane",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "howard-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Kristi Osborn",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Paul J. Dollahite",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Cereta A. Lee",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "prince-georges-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Laura Nan Cook",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Phyllis A. Superior",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Keith B. Ward",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Patricia E. Campen",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Lacy M. Flook",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Karen A. Lemon",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Terri Westcott",
+      "office_slug": "register-of-wills",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": null
     }
   ]
 }

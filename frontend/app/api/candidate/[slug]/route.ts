@@ -15,6 +15,18 @@ export interface IssueTagEvidence {
   source_url: string;
 }
 
+export interface CandidateFinance {
+  total_raised: number;
+  total_spent: number;
+  cash_on_hand: number;
+  num_contributions: number;
+  num_donors: number;
+  individual_total: number;
+  business_pac_total: number;
+  self_total: number;
+  data_as_of: string | null;
+}
+
 export interface CandidateDetailResult {
   id: string;
   slug: string;
@@ -30,6 +42,7 @@ export interface CandidateDetailResult {
   threads_url: string | null;
   completeness_score: number;
   is_incumbent: boolean;
+  finance: CandidateFinance | null;
 
   contest_slug: string | null;
   election_type: string | null;
@@ -77,6 +90,12 @@ export async function GET(
         ai_summary, campaign_voice, news_summary,
         policy_priorities, issue_tags, issue_tag_sources,
         enrichment_confidence
+      ),
+      finance:candidate_finance(
+        total_raised, total_spent, cash_on_hand,
+        num_contributions, num_donors,
+        individual_total, business_pac_total, self_total,
+        data_as_of
       )
       `
     )
@@ -101,6 +120,9 @@ export async function GET(
   const enr = Array.isArray(data.enrichment)
     ? data.enrichment[0] ?? null
     : data.enrichment ?? null;
+  const fin = Array.isArray((data as any).finance)
+    ? (data as any).finance[0] ?? null
+    : (data as any).finance ?? null;
 
   const result: CandidateDetailResult = {
     id: data.id,
@@ -127,6 +149,18 @@ export async function GET(
     office_explainer: off?.explainer_text ?? null,
     jurisdiction_name: jur?.name ?? null,
     jurisdiction_slug: jur?.slug ?? null,
+
+    finance: fin ? {
+      total_raised:       fin.total_raised ?? 0,
+      total_spent:        fin.total_spent ?? 0,
+      cash_on_hand:       fin.cash_on_hand ?? 0,
+      num_contributions:  fin.num_contributions ?? 0,
+      num_donors:         fin.num_donors ?? 0,
+      individual_total:   fin.individual_total ?? 0,
+      business_pac_total: fin.business_pac_total ?? 0,
+      self_total:         fin.self_total ?? 0,
+      data_as_of:         fin.data_as_of ?? null,
+    } : null,
 
     ai_summary: enr?.ai_summary ?? null,
     campaign_voice: enr?.campaign_voice ?? null,

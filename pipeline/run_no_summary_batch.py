@@ -8,7 +8,7 @@ Full pipeline batch for candidates listed in Import_no summary.csv.csv:
     4. Run AI enrichment for each candidate
 
 Usage:
-    python -m pipeline.run_no_summary_batch                      # all steps, gemini backend
+    python -m pipeline.run_no_summary_batch                      # all steps, lmstudio backend
     python -m pipeline.run_no_summary_batch --backend openrouter
     python -m pipeline.run_no_summary_batch --skip-import        # skip step 1
     python -m pipeline.run_no_summary_batch --skip-scrape        # skip steps 2+3
@@ -78,8 +78,8 @@ def main() -> None:
         description="Full pipeline batch for Import_no summary.csv.csv candidates."
     )
     parser.add_argument(
-        "--backend", choices=["lmstudio", "gemini", "openrouter"], default="gemini",
-        help="AI backend for enrichment (default: gemini)",
+        "--backend", choices=["lmstudio", "gemini", "openrouter"], default="lmstudio",
+        help="AI backend for enrichment (default: lmstudio)",
     )
     parser.add_argument(
         "--skip-import", action="store_true",
