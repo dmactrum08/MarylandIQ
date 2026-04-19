@@ -158,6 +158,7 @@ export default async function CandidatePage({
     .select(`
       *,
       enrichment:candidate_enrichment(*),
+      finance:candidate_finance(*),
       contest:contests(
         *,
         office:offices(*),
@@ -174,6 +175,7 @@ export default async function CandidatePage({
   const office = contest ? (Array.isArray(contest.office) ? contest.office[0] : contest.office) : null;
   const jurisdiction = contest ? (Array.isArray(contest.jurisdiction) ? contest.jurisdiction[0] : contest.jurisdiction) : null;
   const enrichment = Array.isArray(candidate.enrichment) ? candidate.enrichment[0] : candidate.enrichment;
+  const finance = Array.isArray((candidate as any).finance) ? (candidate as any).finance[0] ?? null : (candidate as any).finance ?? null;
 
   const hasWebsite = !!candidate.campaign_website_url;
   const hasFacebook = !!candidate.facebook_url;
@@ -190,6 +192,7 @@ export default async function CandidatePage({
   const newsArticleUrls: string[] = candidate.news_article_urls ?? [];
   const hasIssueTags = (enrichment?.issue_tags ?? []).length > 0;
   const hasSocialInference = !!enrichment?.inferred_from_social && !!enrichment?.social_inference_text;
+  const hasAnyContent = hasAiSummary || hasSocialInference || hasCampaignVoice || hasNewsSummary || policyPriorities.length > 0 || hasIssueTags || newsArticleUrls.length > 0;
   const isWithdrawn = candidate.filing_status !== "Active";
 
   function twitterUrl(handle: string) {
@@ -396,6 +399,41 @@ export default async function CandidatePage({
                 </section>
               )}
 
+              {/* No content fallback */}
+              {!hasAnyContent && (
+                <section aria-label="Limited information notice">
+                  <div className="p-6 border border-dashed border-gray-200 rounded-xl bg-[#F8FAFC] space-y-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-[#94a3b8] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.75" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-semibold text-[#0F172A] mb-1">
+                          Not enough public information yet
+                        </p>
+                        <p className="text-sm text-[#475569] leading-relaxed">
+                          We weren&apos;t able to find a campaign website, social media presence, or news coverage for this candidate. Our summaries and policy profiles are generated from publicly available sources &mdash; without those, we can&apos;t build a profile automatically.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pl-8 space-y-3">
+                      <p className="text-sm text-[#475569]">
+                        <span className="font-medium text-[#0F172A]">Are you this candidate?</span> Submit your campaign website or social media links and we&apos;ll generate a profile within 24&nbsp;hours.
+                      </p>
+                      <a
+                        href={`/report?page=/candidates/${slug}&type=candidate-info`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#CC0000] text-white text-sm font-medium rounded-lg hover:bg-[#AA0000] transition-colors focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2"
+                      >
+                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Submit candidate information
+                      </a>
+                    </div>
+                  </div>
+                </section>
+              )}
+
               {/* Issue tags */}
               {hasIssueTags && (
                 <section aria-labelledby="tags-heading">
@@ -595,6 +633,85 @@ export default async function CandidatePage({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </a>
+              )}
+
+              {/* Campaign Finance */}
+              {finance && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-[#F8FAFC] border-b border-gray-200">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-[#94a3b8]">
+                      Campaign Finance
+                    </h2>
+                    <TrustLabel variant="official" />
+                  </div>
+                  <dl className="divide-y divide-gray-100">
+                    <div className="flex items-start gap-2 px-4 py-3">
+                      <dt className="text-xs text-[#94a3b8] w-24 shrink-0 mt-0.5">Raised</dt>
+                      <dd className="text-sm font-semibold text-[#0F172A]">
+                        ${finance.total_raised.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                      </dd>
+                    </div>
+                    <div className="flex items-start gap-2 px-4 py-3">
+                      <dt className="text-xs text-[#94a3b8] w-24 shrink-0 mt-0.5">Spent</dt>
+                      <dd className="text-sm text-[#0F172A]">
+                        ${finance.total_spent.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                      </dd>
+                    </div>
+                    <div className="flex items-start gap-2 px-4 py-3">
+                      <dt className="text-xs text-[#94a3b8] w-24 shrink-0 mt-0.5">Cash on hand</dt>
+                      <dd className={`text-sm font-medium ${finance.cash_on_hand >= 0 ? "text-green-700" : "text-red-600"}`}>
+                        ${finance.cash_on_hand.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                      </dd>
+                    </div>
+                    <div className="flex items-start gap-2 px-4 py-3">
+                      <dt className="text-xs text-[#94a3b8] w-24 shrink-0 mt-0.5">Donors</dt>
+                      <dd className="text-sm text-[#0F172A]">{finance.num_donors.toLocaleString()}</dd>
+                    </div>
+                  </dl>
+                  {/* Funding breakdown bar */}
+                  {finance.total_raised > 0 && (
+                    <div className="px-4 py-3 border-t border-gray-100">
+                      <p className="text-xs text-[#94a3b8] mb-2">Funding breakdown</p>
+                      <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
+                        <div
+                          className="bg-blue-500"
+                          style={{ width: `${Math.round((finance.individual_total / finance.total_raised) * 100)}%` }}
+                        />
+                        <div
+                          className="bg-amber-400"
+                          style={{ width: `${Math.round((finance.business_pac_total / finance.total_raised) * 100)}%` }}
+                        />
+                        <div
+                          className="bg-purple-400"
+                          style={{ width: `${Math.round((finance.self_total / finance.total_raised) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                        <span className="flex items-center gap-1 text-xs text-[#475569]">
+                          <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                          Individual {Math.round((finance.individual_total / finance.total_raised) * 100)}%
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-[#475569]">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                          Org/PAC {Math.round((finance.business_pac_total / finance.total_raised) * 100)}%
+                        </span>
+                        {finance.self_total > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-[#475569]">
+                            <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
+                            Self {Math.round((finance.self_total / finance.total_raised) * 100)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {finance.data_as_of && (
+                    <div className="px-4 py-2 border-t border-gray-100">
+                      <p className="text-xs text-[#94a3b8]">
+                        Data as of {new Date(finance.data_as_of).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}. Source: MD SBE.
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Report issue */}
