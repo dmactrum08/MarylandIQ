@@ -233,16 +233,17 @@ export const MD_OFFICES: Pick<Office, "name" | "slug">[] = [
   { name: "Comptroller", slug: "comptroller" },
   // State Legislative
   { name: "State Senator", slug: "state-senator" },
-  { name: "House of Delegates", slug: "house-of-delegates" },
+  { name: "House of Delegates", slug: "house-of-delegates-member" },
   // County
   { name: "County Executive", slug: "county-executive" },
   { name: "County Council Member", slug: "county-council-member" },
   { name: "County Commissioner", slug: "county-commissioner" },
-  { name: "Board of Education Member", slug: "board-of-education-member" },
+  { name: "Board of Education Member", slug: "board-of-education" },
   { name: "Sheriff", slug: "sheriff" },
   { name: "State's Attorney", slug: "states-attorney" },
   { name: "Register of Wills", slug: "register-of-wills" },
-  { name: "Clerk of Circuit Court", slug: "clerk-of-circuit-court" },
+  { name: "Clerk of the Circuit Court", slug: "clerk-of-circuit-court" },
   { name: "Circuit Court Judge", slug: "circuit-court-judge" },
   { name: "Orphans' Court Judge", slug: "orphans-court-judge" },
+  { name: "County Treasurer", slug: "county-treasurer" },
 ];

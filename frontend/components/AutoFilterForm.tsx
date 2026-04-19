@@ -35,7 +35,7 @@ export function CandidatesFilterForm({
   }
 
   function navigate(overrides: Record<string, string>) {
-    startTransition(() => router.push(buildUrl(overrides)));
+    startTransition(() => router.push(buildUrl(overrides), { scroll: false }));
   }
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -163,7 +163,7 @@ export function RacesFilterForm({
   }
 
   function navigate(overrides: Record<string, string>) {
-    startTransition(() => router.push(buildUrl(overrides)));
+    startTransition(() => router.push(buildUrl(overrides), { scroll: false }));
   }
 
   const hasFilters = !!(county || office || electionType);
