@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent / "data"
 AIRSCALE_CSV = DATA_DIR / "airscale_normalized.csv"
 ARTICLES_CSV = DATA_DIR / "Import_Every Candidate_Article.csv"
+NO_SUMMARY_CSV = DATA_DIR / "Import_no summary.csv.csv"
 
 
 # ---------------------------------------------------------------------------
@@ -353,16 +354,114 @@ def import_article_csv(supabase) -> dict[str, int]:
     return {"articles_added": articles_added, "skipped": skipped}
 
 
-def main() -> None:
-    supabase = get_client()
+def import_no_summary(supabase) -> dict[str, int]:
+    """Import article/news links from 'Import_no summary.csv.csv'.
 
+    Columns used: slug (to look up the candidate), Candidate Links (article URLs).
+    Rows where Candidate Links is empty or 'None' are skipped.
+    """
+    if not NO_SUMMARY_CSV.exists():
+        log.warning(f"  {NO_SUMMARY_CSV.name} not found — skipping")
+        return {"articles_added": 0, "skipped": 0}
+
+    log.info(f"Reading {NO_SUMMARY_CSV.name} ...")
+    rows: list[dict] = []
+    with open(NO_SUMMARY_CSV, newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        reader.fieldnames = [f.strip() for f in (reader.fieldnames or [])]
+        for row in reader:
+            rows.append({k.strip(): v.strip() for k, v in row.items()})
+    log.info(f"  {len(rows)} rows")
+
+    # Collect slugs that have at least one URL
+    slug_to_urls: dict[str, list[str]] = {}
+    for row in rows:
+        link_text = row.get("Candidate Links", "")
+        urls = parse_urls(link_text)
+        if not urls:
+            continue
+        slug = row.get("slug", "").strip()
+        if slug:
+            slug_to_urls.setdefault(slug, []).extend(urls)
+
+    if not slug_to_urls:
+        log.info("  No usable links found")
+        return {"articles_added": 0, "skipped": 0}
+
+    # Resolve slugs → candidate IDs in batches
+    slugs = list(slug_to_urls.keys())
+    BATCH = 200
+    slug_to_id: dict[str, str] = {}
+    for i in range(0, len(slugs), BATCH):
+        chunk = slugs[i : i + BATCH]
+        db_rows = (
+            supabase.table("candidates")
+            .select("id, slug")
+            .in_("slug", chunk)
+            .execute()
+            .data
+        )
+        for r in db_rows:
+            slug_to_id[r["slug"]] = r["id"]
+
+    # Fetch existing article URLs for matched candidates
+    matched_ids = list(slug_to_id.values())
+    current_enrichments = fetch_enrichments(supabase, matched_ids) if matched_ids else {}
+
+    articles_added = 0
+    skipped = 0
+
+    for slug, new_urls in slug_to_urls.items():
+        cid = slug_to_id.get(slug)
+        if not cid:
+            log.warning(f"  Slug not found in DB: {slug!r} — skipping")
+            skipped += 1
+            continue
+
+        added = upsert_enrichment_articles(
+            supabase, cid, current_enrichments.get(cid, []), new_urls
+        )
+        articles_added += added
+        if added:
+            log.info(f"  {slug}: +{added} URL(s)")
+
+    log.info(
+        f"  no_summary CSV: {articles_added} article URLs added, {skipped} rows skipped"
+    )
+    return {"articles_added": articles_added, "skipped": skipped}
+
+
+def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(description="Import candidate links from research CSVs.")
+    parser.add_argument(
+        "--no-summary-only", action="store_true",
+        help="Only import from Import_no summary.csv.csv; skip airscale and articles CSVs."
+    )
+    args = parser.parse_args()
+
+    supabase = get_client()
     log.info("=== import_csv_links.py ===")
+
+    if args.no_summary_only:
+        r3 = import_no_summary(supabase)
+        total_articles = r3["articles_added"]
+        total_skipped = r3["skipped"]
+        log.info(f"Done. article URLs added={total_articles}, rows skipped={total_skipped}")
+        supabase.table("pipeline_runs").insert({
+            "script_name": "import_csv_links.py",
+            "candidates_processed": 0,
+            "notes": f"no_summary_only article_urls_added={total_articles} skipped={total_skipped}",
+        }).execute()
+        return
+
     r1 = import_airscale(supabase)
     r2 = import_article_csv(supabase)
+    r3 = import_no_summary(supabase)
 
     total_fields = r1["fields_written"]
-    total_articles = r1["articles_added"] + r2["articles_added"]
-    total_skipped = r1["skipped"] + r2["skipped"]
+    total_articles = r1["articles_added"] + r2["articles_added"] + r3["articles_added"]
+    total_skipped = r1["skipped"] + r2["skipped"] + r3["skipped"]
 
     log.info(
         f"Done. candidate fields written={total_fields}, "

@@ -105,7 +105,8 @@ class SocialResult:
 # ---------------------------------------------------------------------------
 
 def fetch_thin_candidates(
-    supabase, limit: Optional[int] = None, force: bool = False
+    supabase, limit: Optional[int] = None, force: bool = False,
+    candidate_name: Optional[str] = None,
 ) -> list[ThinCandidate]:
     """
     Return candidates to scrape social media for.
@@ -122,7 +123,10 @@ def fetch_thin_candidates(
         "news_article_urls, "
         "candidate_enrichment(social_scraped_at, social_inference_text)"
     )
-    if not force:
+    if candidate_name:
+        query = query.ilike("full_name", f"%{candidate_name}%")
+        force = True  # always re-scrape when targeting a specific candidate
+    elif not force:
         query = query.lt("completeness_score", THIN_THRESHOLD)
     rows = query.execute().data
 
@@ -334,9 +338,12 @@ def process_candidate(candidate: ThinCandidate) -> SocialResult:
     )
 
 
-def scrape_social_media(limit: Optional[int] = None, force: bool = False) -> dict[str, int]:
+def scrape_social_media(
+    limit: Optional[int] = None, force: bool = False,
+    candidate_name: Optional[str] = None,
+) -> dict[str, int]:
     supabase = get_client()
-    candidates = fetch_thin_candidates(supabase, limit=limit, force=force)
+    candidates = fetch_thin_candidates(supabase, limit=limit, force=force, candidate_name=candidate_name)
     log.info(f"Found {len(candidates)} candidates to scrape")
 
     found = 0
@@ -375,11 +382,13 @@ if __name__ == "__main__":
                         help="Process only the first N candidates")
     parser.add_argument("--force", action="store_true",
                         help="Re-scrape all candidates regardless of prior scrape state")
+    parser.add_argument("--candidate", type=str, default=None, metavar="NAME",
+                        help="Scrape a single candidate by name (case-insensitive substring match). Implies --force for that candidate.")
     args = parser.parse_args()
 
     log.info("=== scrape_social_media.py ===")
     try:
-        result = scrape_social_media(limit=args.limit, force=args.force)
+        result = scrape_social_media(limit=args.limit, force=args.force, candidate_name=args.candidate)
         log.info(f"Done. {result}")
         sys.exit(0)
     except Exception as exc:
