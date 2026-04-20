@@ -269,17 +269,50 @@ def build_user_prompt(target: EnrichmentTarget) -> str:
 # ---------------------------------------------------------------------------
 
 def parse_response(raw: str) -> Optional[dict]:
-    """Extract and parse JSON from the model's response text."""
-    # Strip Qwen3 thinking blocks if thinking mode wasn't fully suppressed
+    """Extract and parse JSON from the model's response text.
+
+    Tries progressively more aggressive extraction strategies so that
+    partial or wrapped responses are not silently dropped.
+    """
+    # 1. Strip Qwen3 / reasoning model thinking blocks
     cleaned = re.sub(r"<think>.*?</think>", "", raw.strip(), flags=re.DOTALL)
-    # Strip markdown code fences if the model added them despite instructions
+    # 2. Strip markdown code fences
     cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned.strip(), flags=re.IGNORECASE)
     cleaned = re.sub(r"\s*```$", "", cleaned.strip())
+
+    # Attempt 1: straight parse
     try:
         return json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        log.warning(f"JSON parse failed: {exc} — raw: {raw[:200]!r}")
-        return None
+    except json.JSONDecodeError:
+        pass
+
+    # Attempt 2: find the first {...} block that spans the whole JSON object
+    match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+
+    # Attempt 3: the model sometimes emits trailing commas or comments —
+    # strip them with a best-effort sanitiser then retry
+    sanitised = re.sub(r",\s*([}\]])", r"\1", cleaned)   # trailing commas
+    sanitised = re.sub(r"//[^\n]*", "", sanitised)        # // comments
+    try:
+        return json.loads(sanitised)
+    except json.JSONDecodeError:
+        pass
+
+    # Attempt 4: same sanitisation on the extracted {...} block
+    match2 = re.search(r"\{.*\}", sanitised, flags=re.DOTALL)
+    if match2:
+        try:
+            return json.loads(match2.group())
+        except json.JSONDecodeError:
+            pass
+
+    log.warning(f"JSON parse failed after all attempts — raw: {raw[:300]!r}")
+    return None
 
 
 def validate_tags(tags: list) -> list[str]:
