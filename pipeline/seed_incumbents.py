@@ -383,17 +383,25 @@ def load_candidate_index(supabase) -> list[dict]:
     Load all active candidates with their contest/office/jurisdiction context.
     Returns a flat list of dicts for matching.
     """
-    result = supabase.table("candidates").select(
-        "id, full_name, is_incumbent, filing_status, "
-        "contest:contests("
-        "  district_name, "
-        "  office:offices(slug), "
-        "  jurisdiction:jurisdictions(slug)"
-        ")"
-    ).eq("filing_status", "Active").execute()
+    PAGE = 1000
+    all_data = []
+    offset = 0
+    while True:
+        result = supabase.table("candidates").select(
+            "id, full_name, is_incumbent, filing_status, "
+            "contest:contests("
+            "  district_name, "
+            "  office:offices(slug), "
+            "  jurisdiction:jurisdictions(slug)"
+            ")"
+        ).eq("filing_status", "Active").range(offset, offset + PAGE - 1).execute()
+        all_data.extend(result.data)
+        if len(result.data) < PAGE:
+            break
+        offset += PAGE
 
     rows = []
-    for row in result.data:
+    for row in all_data:
         contest = row.get("contest")
         if isinstance(contest, list):
             contest = contest[0] if contest else None

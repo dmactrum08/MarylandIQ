@@ -1544,6 +1544,18 @@
       "office_slug": "register-of-wills",
       "jurisdiction_slug": "worcester-county",
       "district_name": null
+    },
+    {
+      "full_name": "Trish McGee",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Amy R. Dodson",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": "District 3"
     }
   ]
 }

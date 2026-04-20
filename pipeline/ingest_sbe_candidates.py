@@ -369,13 +369,18 @@ def _extract_dd_value(dd: Tag, label: str) -> Optional[str]:
                 return f"https://{prefix}{text}"
             return f"https://{text}"
 
-    # Plain-text fallback (e.g. Website field with a bare URL string)
-    if label == "Website":
+    # Plain-text fallback for labels whose values are never links
+    if label in ("Status", "Filed", "Website"):
         text = dd.get_text(" ", strip=True)
-        if text.startswith(("http://", "https://")):
-            return text
-        if text.startswith("www."):
-            return f"https://{text}"
+        if not text:
+            return None
+        if label == "Website":
+            if text.startswith(("http://", "https://")):
+                return text
+            if text.startswith("www."):
+                return f"https://{text}"
+            return None
+        return text  # Status / Filed are always plain text
 
     return None
 
@@ -567,12 +572,79 @@ def find_contest_id(contest_lookup: dict[tuple[str, str, str], str], record: Can
     return contest_lookup.get((record.jurisdiction_slug, record.office_name, district_key))
 
 
+def _fetch_all_candidates(supabase, columns: str) -> list[dict]:
+    """Paginated fetch of all candidates rows to avoid the 1000-row default limit."""
+    PAGE = 1000
+    all_rows: list[dict] = []
+    offset = 0
+    while True:
+        batch = (
+            supabase.table("candidates")
+            .select(columns)
+            .range(offset, offset + PAGE - 1)
+            .execute()
+            .data
+        )
+        all_rows.extend(batch)
+        if len(batch) < PAGE:
+            break
+        offset += PAGE
+    return all_rows
+
+
+def update_filing_statuses(supabase, records: list[CandidateRecord]) -> dict[str, int]:
+    """
+    Sync only filing_status from a freshly-parsed SBE list.
+    Never inserts, never touches social/website fields.
+    """
+    existing_rows = _fetch_all_candidates(
+        supabase, "id, sbe_candidate_id, full_name, filing_status"
+    )
+    by_sbe_id = {r["sbe_candidate_id"]: r for r in existing_rows if r.get("sbe_candidate_id")}
+
+    updated = 0
+    withdrawals = 0
+
+    for record in records:
+        existing = by_sbe_id.get(record.sbe_candidate_id)
+        if not existing:
+            continue
+        if existing["filing_status"] == record.filing_status:
+            continue
+
+        payload: dict = {"filing_status": record.filing_status}
+        if record.filing_status == "Withdrawn":
+            payload["withdrawn_detected_at"] = datetime.utcnow().isoformat()
+            withdrawals += 1
+            log.info(
+                "Withdrawn: %s (%s → %s)",
+                existing["full_name"],
+                existing["filing_status"],
+                record.filing_status,
+            )
+        else:
+            log.info(
+                "Status change: %s (%s → %s)",
+                existing["full_name"],
+                existing["filing_status"],
+                record.filing_status,
+            )
+
+        supabase.table("candidates").update(payload).eq("id", existing["id"]).execute()
+        updated += 1
+
+    log.info("update_filing_statuses: %d updated (%d withdrawals)", updated, withdrawals)
+    return {"candidates_processed": updated, "new_detected": 0,
+            "withdrawals_detected": withdrawals, "errors": 0}
+
+
 def upsert_candidates(supabase, records: list[CandidateRecord]) -> dict[str, int]:
     contest_lookup = build_contest_lookup(supabase)
 
-    existing_rows = supabase.table("candidates").select(
-        "id, contest_id, full_name, sbe_candidate_id, filing_status, party, campaign_website_url, facebook_url, linkedin_url, twitter_handle"
-    ).execute().data
+    existing_rows = _fetch_all_candidates(
+        supabase,
+        "id, contest_id, full_name, sbe_candidate_id, filing_status, party, campaign_website_url, facebook_url, linkedin_url, twitter_handle",
+    )
     existing_by_sbe_id = {row["sbe_candidate_id"]: row for row in existing_rows}
     existing_by_contest_and_name = {
         (row["contest_id"], row["full_name"].strip().lower()): row for row in existing_rows
@@ -839,16 +911,13 @@ def ensure_state_federal_contests(supabase, records: list[CandidateRecord]) -> N
         log.info("Created contest: %s", contest_slug)
 
 
-def ingest_sbe_candidates() -> dict[str, int]:
-    supabase = get_client()
-
-    # ── County / local candidates (HTML) ──────────────────────────────────────
+def _fetch_sbe_records() -> list[CandidateRecord]:
+    """Fetch and parse all SBE sources (HTML + CSVs). Returns combined list."""
     soup = fetch_candidate_page()
     time.sleep(REQUEST_DELAY)
     county_records = parse_candidate_records(soup)
     log.info("Parsed %d county candidate records from SBE HTML page", len(county_records))
 
-    # ── State / federal candidates (CSV) ──────────────────────────────────────
     csv_records: list[CandidateRecord] = []
     for source_name, url in SBE_CSV_SOURCES.items():
         try:
@@ -860,12 +929,14 @@ def ingest_sbe_candidates() -> dict[str, int]:
         except Exception as exc:
             log.error("Failed to fetch/parse %s CSV (%s): %s", source_name, url, exc)
 
-    # Ensure contests exist for every state/federal race found in the CSVs
-    if csv_records:
-        ensure_state_federal_contests(supabase, csv_records)
+    return county_records + csv_records
 
-    all_records = county_records + csv_records
-    log.info("Total records to upsert: %d", len(all_records))
+
+def ingest_sbe_candidates(update_status_only: bool = False) -> dict[str, int]:
+    supabase = get_client()
+
+    all_records = _fetch_sbe_records()
+    log.info("Total SBE records fetched: %d", len(all_records))
 
     if os.environ.get("MARYLANDIQ_DEBUG_CANDIDATES") == "1":
         for record in all_records[:DEBUG_SAMPLE_LIMIT]:
@@ -878,17 +949,37 @@ def ingest_sbe_candidates() -> dict[str, int]:
                 record.party,
             )
 
-    summary = upsert_candidates(supabase, all_records)
+    if update_status_only:
+        summary = update_filing_statuses(supabase, all_records)
+    else:
+        csv_records = [r for r in all_records if r.jurisdiction_slug == "maryland-statewide"]
+        if csv_records:
+            ensure_state_federal_contests(supabase, csv_records)
+        summary = upsert_candidates(supabase, all_records)
+
     log_pipeline_run(supabase, summary)
     return summary
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Ingest SBE candidate data.")
+    parser.add_argument(
+        "--update-status",
+        action="store_true",
+        help="Only sync filing_status for existing candidates — no inserts, no social/website changes.",
+    )
+    args = parser.parse_args()
+
     log.info("=== ingest_sbe_candidates.py ===")
-    log.info("Sources: HTML (county) + 4 CSVs (state/federal)")
+    if args.update_status:
+        log.info("Mode: update-status only (filing_status sync)")
+    else:
+        log.info("Sources: HTML (county) + 4 CSVs (state/federal)")
 
     try:
-        summary = ingest_sbe_candidates()
+        summary = ingest_sbe_candidates(update_status_only=args.update_status)
         log.info(f"Done. Summary: {summary}")
         sys.exit(0)
     except Exception as exc:

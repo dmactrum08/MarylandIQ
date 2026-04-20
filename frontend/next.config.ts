@@ -23,15 +23,15 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Next.js hydration needs unsafe-inline; dev HMR additionally needs unsafe-eval
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://pagead2.googlesyndication.com https://partner.googleadservices.com`,
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com`,
       "style-src 'self' 'unsafe-inline'",
       // Allow images from HTTPS and data URIs (favicons, inline SVG)
       "img-src 'self' data: https:",
       "font-src 'self' data:",
-      // API connections: Supabase + geocoding services
-      "connect-src 'self' https://*.supabase.co https://geocoding.geo.census.gov https://nominatim.openstreetmap.org",
-      // Stripe checkout is a full-page redirect, but stripe.js needs frame access
-      "frame-src https://js.stripe.com https://checkout.stripe.com",
+      // API connections: Supabase + geocoding services + AdSense
+      "connect-src 'self' https://*.supabase.co https://geocoding.geo.census.gov https://nominatim.openstreetmap.org https://pagead2.googlesyndication.com https://adservice.google.com https://*.doubleclick.net",
+      // Stripe + AdSense iframes
+      "frame-src https://js.stripe.com https://checkout.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
       // Block plugins (Flash, etc.)
       "object-src 'none'",
       // Prevent base-tag hijacking
