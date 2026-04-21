@@ -1324,7 +1324,7 @@
       "district_name": null
     },
     {
-      "full_name": "William L. Bittinger",
+      "full_name": "Bill Bittinger",
       "office_slug": "clerk-of-circuit-court",
       "jurisdiction_slug": "garrett-county",
       "district_name": null
@@ -1556,6 +1556,48 @@
       "office_slug": "board-of-education",
       "jurisdiction_slug": "talbot-county",
       "district_name": "District 3"
+    },
+    {
+      "full_name": "Andrew S. Gleason",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "somerset-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "April Fleming Miller",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 4"
+    },
+    {
+      "full_name": "Ben Kramer",
+      "office_slug": "state-senator",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 19"
+    },
+    {
+      "full_name": "Bob Long",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 6"
+    },
+    {
+      "full_name": "Bonnie H. Ennis",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Brenda Hatcher-Savoy",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Brian Hampton",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 4"
     }
   ]
 }

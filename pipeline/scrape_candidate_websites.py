@@ -38,7 +38,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-FAST_PATH_TIMEOUT = 8
+FAST_PATH_TIMEOUT = (5, 8)  # (connect, read) — prevents DNS hangs
 PLAYWRIGHT_TIMEOUT_MS = 15000
 MAX_WORKERS = 5
 MIN_TEXT_LENGTH = 300
@@ -200,6 +200,28 @@ def extract_internal_links(base_url: str, html: str) -> list[str]:
     return links
 
 
+def _fetch_requests_only(url: str) -> tuple[Optional[str], Optional[str]]:
+    """Requests-only fetch with no Playwright fallback. Used for probe pages."""
+    try:
+        resp = requests.get(url, timeout=FAST_PATH_TIMEOUT,
+                            headers={"User-Agent": USER_AGENT}, allow_redirects=True)
+        resp.raise_for_status()
+        return resp.text, None
+    except requests.exceptions.SSLError:
+        try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            resp = requests.get(url, timeout=FAST_PATH_TIMEOUT,
+                                headers={"User-Agent": USER_AGENT},
+                                allow_redirects=True, verify=False)
+            resp.raise_for_status()
+            return resp.text, None
+        except Exception:
+            return None, "ssl_error"
+    except Exception as exc:
+        return None, type(exc).__name__
+
+
 def fetch_page(url: str) -> tuple[Optional[str], Optional[str]]:
     """
     Fetch a single URL. Returns (html, error_note).
@@ -215,6 +237,22 @@ def fetch_page(url: str) -> tuple[Optional[str], Optional[str]]:
         )
         resp.raise_for_status()
         return resp.text, None
+    except requests.exceptions.SSLError:
+        # Retry with SSL verification disabled for self-signed certs
+        try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            resp = requests.get(
+                url,
+                timeout=FAST_PATH_TIMEOUT,
+                headers={"User-Agent": USER_AGENT},
+                allow_redirects=True,
+                verify=False,
+            )
+            resp.raise_for_status()
+            return resp.text, None
+        except Exception as exc:
+            req_error = f"SSLError+{type(exc).__name__}"
     except Exception as exc:
         req_error = type(exc).__name__
 
@@ -236,6 +274,25 @@ def fetch_page(url: str) -> tuple[Optional[str], Optional[str]]:
         return None, f"requests:{req_error};playwright:{type(exc).__name__}"
 
 
+# Common campaign page paths to probe when link discovery finds nothing
+_PROBE_PATHS = [
+    "/about", "/about-me", "/bio", "/biography", "/meet-me",
+    "/issues", "/platform", "/priorities", "/positions",
+    "/news", "/blog", "/press",
+    "/contact", "/volunteer", "/events",
+]
+
+
+def _probe_common_pages(base_origin: str, visited: set[str]) -> list[str]:
+    """Return probe URLs for common campaign paths not yet visited."""
+    urls = []
+    for path in _PROBE_PATHS:
+        url = f"{base_origin}{path}"
+        if url not in visited:
+            urls.append(url)
+    return urls
+
+
 def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
     """
     BFS crawl of a candidate's domain starting from start_url.
@@ -249,6 +306,8 @@ def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
     visited: set[str] = set()
     all_text: list[str] = []
     pages_scraped = 0
+    probed = False
+    probe_urls: set[str] = set()
 
     while queue and pages_scraped < MAX_PAGES_PER_SITE:
         url = queue.pop(0)
@@ -256,7 +315,8 @@ def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
             continue
         visited.add(url)
 
-        html, err = fetch_page(url)
+        is_probe = url in probe_urls
+        html, err = fetch_page(url) if not is_probe else _fetch_requests_only(url)
         if not html:
             continue
 
@@ -265,9 +325,39 @@ def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
             all_text.append(f"[Page: {url}]\n{text}")
             pages_scraped += 1
 
-        # Discover new internal links from this page and add to queue
-        for link in extract_internal_links(url, html):
+        # Discover new internal links from this page
+        new_links = extract_internal_links(url, html)
+
+        # If the homepage yields no links, the nav is JS-rendered — try
+        # Playwright to get rendered HTML and re-extract links from it.
+        if not new_links and url == (start_url.rstrip("/") or base_origin):
+            try:
+                from playwright.sync_api import sync_playwright
+                with sync_playwright() as pw:
+                    browser = pw.chromium.launch(headless=True)
+                    try:
+                        pg = browser.new_page(user_agent=USER_AGENT)
+                        pg.goto(url, timeout=PLAYWRIGHT_TIMEOUT_MS, wait_until="domcontentloaded")
+                        try:
+                            pg.wait_for_load_state("networkidle", timeout=8000)
+                        except Exception:
+                            pass
+                        rendered = pg.content()
+                        new_links = extract_internal_links(url, rendered)
+                    finally:
+                        browser.close()
+            except Exception:
+                pass
+
+        for link in new_links:
             if link not in visited and link not in queue:
+                queue.append(link)
+
+        # After exhausting discovered links, probe common paths once (requests-only)
+        if not queue and not probed:
+            probed = True
+            for link in _probe_common_pages(base_origin, visited):
+                probe_urls.add(link)
                 queue.append(link)
 
     if not all_text:
