@@ -217,7 +217,7 @@ def normalize_filing_status(text: Optional[str]) -> str:
 
     normalized = cleaned.lower()
 
-    if "withdraw" in normalized:
+    if "withdraw" in normalized or "deceased" in normalized:
         return "Withdrawn"
 
     if any(token in normalized for token in ("disqual", "ineligible", "removed", "stricken")):

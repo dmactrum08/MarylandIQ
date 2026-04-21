@@ -1018,8 +1018,8 @@
       "district_name": null
     },
     {
-      "full_name": "Chuck Callahan",
-      "office_slug": "county-council-at-large",
+      "full_name": "Chuck F. Callahan III",
+      "office_slug": "county-council-member",
       "jurisdiction_slug": "talbot-county",
       "district_name": null
     },
@@ -1570,6 +1570,12 @@
       "district_name": "Legislative District 4"
     },
     {
+      "full_name": "Cathi Forbes",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 43B"
+    },
+    {
       "full_name": "Ben Kramer",
       "office_slug": "state-senator",
       "jurisdiction_slug": "maryland-statewide",
@@ -1592,6 +1598,12 @@
       "office_slug": "board-of-education",
       "jurisdiction_slug": "baltimore-county",
       "district_name": "District 4"
+    },
+    {
+      "full_name": "Christina Pumphrey",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 6"
     },
     {
       "full_name": "Brian Hampton",
