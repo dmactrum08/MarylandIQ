@@ -1600,6 +1600,30 @@
       "district_name": "Legislative District 43B"
     },
     {
+      "full_name": "Gabriel Maximilian Moreno",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 13"
+    },
+    {
+      "full_name": "Grace Rivera-Oven",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Jamila Smith",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Jane E. Lichter",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 2"
+    },
+    {
       "full_name": "Ben Kramer",
       "office_slug": "state-senator",
       "jurisdiction_slug": "maryland-statewide",
@@ -1610,6 +1634,12 @@
       "office_slug": "house-of-delegates-member",
       "jurisdiction_slug": "maryland-statewide",
       "district_name": "Legislative District 6"
+    },
+    {
+      "full_name": "Gene Malone",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 2"
     },
     {
       "full_name": "Bonnie H. Ennis",
@@ -1634,6 +1664,12 @@
       "office_slug": "board-of-education",
       "jurisdiction_slug": "cecil-county",
       "district_name": "District 4"
+    },
+    {
+      "full_name": "Joe Ferdinando",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "cecil-county",
+      "district_name": "District 3"
     }
   ]
 }

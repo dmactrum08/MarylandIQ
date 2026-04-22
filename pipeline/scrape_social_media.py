@@ -49,7 +49,7 @@ THIN_THRESHOLD = 40
 # Rate limit between individual social page scrapes
 SCRAPE_SLEEP = 1.0
 
-MAX_SOCIAL_TEXT_CHARS = 4000  # per candidate — fed into social_inference_text
+MAX_SOCIAL_TEXT_CHARS = 10000  # per candidate — fed into social_inference_text
 
 # Minimum text length to consider a social scrape successful
 MIN_USEFUL_TEXT = 100

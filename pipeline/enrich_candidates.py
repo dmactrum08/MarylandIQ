@@ -258,16 +258,16 @@ class GeminiBackend:
             sys.exit(1)
         genai.configure(api_key=api_key)
         self._model = genai.GenerativeModel(
-            model_name="gemma-4-31b-it",
+            model_name="gemini-flash-latest",
             system_instruction=SYSTEM_PROMPT,
         )
-        log.info("Backend: Gemini  model=gemma-4-31b-it")
+        log.info("Backend: Gemini  model=gemini-flash-latest")
 
     def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         if system_prompt and system_prompt != SYSTEM_PROMPT:
             import google.generativeai as genai
             model = genai.GenerativeModel(
-                model_name="gemma-4-31b-it",
+                model_name="gemini-flash-latest",
                 system_instruction=system_prompt,
             )
             response = model.generate_content(prompt)
