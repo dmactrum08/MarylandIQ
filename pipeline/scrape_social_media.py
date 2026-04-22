@@ -341,7 +341,12 @@ def process_candidate(candidate: ThinCandidate) -> SocialResult:
 def scrape_social_media(
     limit: Optional[int] = None, force: bool = False,
     candidate_name: Optional[str] = None,
+    max_chars: Optional[int] = None,
 ) -> dict[str, int]:
+    global MAX_SOCIAL_TEXT_CHARS
+    if max_chars is not None:
+        MAX_SOCIAL_TEXT_CHARS = max_chars
+
     supabase = get_client()
     candidates = fetch_thin_candidates(supabase, limit=limit, force=force, candidate_name=candidate_name)
     log.info(f"Found {len(candidates)} candidates to scrape")
@@ -384,11 +389,13 @@ if __name__ == "__main__":
                         help="Re-scrape all candidates regardless of prior scrape state")
     parser.add_argument("--candidate", type=str, default=None, metavar="NAME",
                         help="Scrape a single candidate by name (case-insensitive substring match). Implies --force for that candidate.")
+    parser.add_argument("--max-chars", type=int, default=None, metavar="N",
+                        help=f"Override the per-candidate text character limit (default {MAX_SOCIAL_TEXT_CHARS}).")
     args = parser.parse_args()
 
     log.info("=== scrape_social_media.py ===")
     try:
-        result = scrape_social_media(limit=args.limit, force=args.force, candidate_name=args.candidate)
+        result = scrape_social_media(limit=args.limit, force=args.force, candidate_name=args.candidate, max_chars=args.max_chars)
         log.info(f"Done. {result}")
         sys.exit(0)
     except Exception as exc:

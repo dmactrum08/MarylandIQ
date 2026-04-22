@@ -46,6 +46,30 @@
   },
   "incumbents": [
     {
+      "full_name": "Dottery A. Butler-Washington",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Dorothy Andrews",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "saint-marys-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "David Plotts",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "wicomico-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Darrell E. Evans",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
       "full_name": "Bill Atkinson",
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "allegany-county",

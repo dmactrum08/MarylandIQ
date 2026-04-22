@@ -110,7 +110,7 @@ class OpenRouterBackend:
         if not api_key:
             log.error("OPENROUTER_API_KEY not set in .env")
             sys.exit(1)
-        model = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.5-flash-preview")
+        model = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3-coder:free")
         self._model = model
         self._client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key)
         log.info(f"Backend: OpenRouter  model={model}")

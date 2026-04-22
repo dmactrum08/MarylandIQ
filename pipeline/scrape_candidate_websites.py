@@ -236,7 +236,10 @@ def fetch_page(url: str) -> tuple[Optional[str], Optional[str]]:
             allow_redirects=True,
         )
         resp.raise_for_status()
-        return resp.text, None
+        # If the page is a JS shell with near-no text, fall through to Playwright
+        if len(extract_text_from_html(resp.text)) >= MIN_TEXT_LENGTH:
+            return resp.text, None
+        req_error = "spa_shell"
     except requests.exceptions.SSLError:
         # Retry with SSL verification disabled for self-signed certs
         try:
@@ -440,7 +443,7 @@ def scrape_one(
         else:
             text, method, pages = crawl_domain(url)
             website_ok = bool(text and len(text) >= MIN_TEXT_LENGTH)
-            result.method = method
+            result.method = method if method in ("requests", "playwright", "crawl") else None
             result.text = text if website_ok else None
             result.scrape_error = not website_ok
             result.notes = f"pages={pages}"

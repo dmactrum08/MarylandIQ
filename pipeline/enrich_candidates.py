@@ -132,7 +132,7 @@ class OpenRouterBackend:
         if not api_key:
             log.error("OPENROUTER_API_KEY not set in .env")
             sys.exit(1)
-        model = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.5-flash-preview")
+        model = os.environ.get("OPENROUTER_MODEL", "openrouter/elephant-alpha")
         self._model = model
         self._client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key)
         log.info(f"Backend: OpenRouter  model={model}")
@@ -146,10 +146,107 @@ class OpenRouterBackend:
             ],
             temperature=0.2,
         )
-        return response.choices[0].message.content
+        if not response.choices:
+            log.warning("OpenRouter returned empty choices. Full response: %s", response)
+            raise ValueError(f"OpenRouter model {self._model!r} returned empty choices")
+        content = response.choices[0].message.content
+        if content is None:
+            log.warning("OpenRouter returned null content. Full response: %s", response)
+            raise ValueError(f"OpenRouter model {self._model!r} returned null content")
+        return content
 
     def sleep_between_calls(self) -> None:
         time.sleep(1)  # light throttle; adjust if hitting rate limits
+
+
+class ClaudeBackend:
+    def __init__(self) -> None:
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            log.error("ANTHROPIC_API_KEY not set in .env")
+            sys.exit(1)
+        model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+        self._model = model
+        self._api_key = api_key
+        log.info(f"Backend: Claude  model={model}")
+
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        import anthropic
+        client = anthropic.Anthropic(api_key=self._api_key)
+        message = client.messages.create(
+            model=self._model,
+            max_tokens=2048,
+            system=system_prompt or SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return message.content[0].text
+
+    def sleep_between_calls(self) -> None:
+        time.sleep(0.5)
+
+
+class ChatGPTBackend:
+    def __init__(self) -> None:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            log.error("OPENAI_API_KEY not set in .env")
+            sys.exit(1)
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        self._model = model
+        self._api_key = api_key
+        log.info(f"Backend: ChatGPT  model={model}")
+
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        from openai import OpenAI
+        client = OpenAI(api_key=self._api_key)
+        response = client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": system_prompt or SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+        )
+        return response.choices[0].message.content
+
+    def sleep_between_calls(self) -> None:
+        time.sleep(0.5)
+
+
+class QwenBackend:
+    def __init__(self) -> None:
+        api_key = os.environ.get("DASHSCOPE_API_KEY")
+        if not api_key:
+            log.error("DASHSCOPE_API_KEY not set in .env")
+            sys.exit(1)
+        model = os.environ.get("QWEN_MODEL", "qwen-plus")
+        self._model = model
+        self._api_key = api_key
+        log.info(f"Backend: Qwen  model={model}")
+
+    def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=self._api_key,
+            base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        )
+        response = client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": system_prompt or SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+        )
+        if not response.choices:
+            raise ValueError(f"Qwen model {self._model!r} returned empty choices")
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError(f"Qwen model {self._model!r} returned null content")
+        return content
+
+    def sleep_between_calls(self) -> None:
+        time.sleep(0.5)
 
 
 class GeminiBackend:
@@ -161,16 +258,16 @@ class GeminiBackend:
             sys.exit(1)
         genai.configure(api_key=api_key)
         self._model = genai.GenerativeModel(
-            model_name="gemini-flash-latest",
+            model_name="gemma-4-31b-it",
             system_instruction=SYSTEM_PROMPT,
         )
-        log.info("Backend: Gemini  model=gemini-flash-latest")
+        log.info("Backend: Gemini  model=gemma-4-31b-it")
 
     def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         if system_prompt and system_prompt != SYSTEM_PROMPT:
             import google.generativeai as genai
             model = genai.GenerativeModel(
-                model_name="gemini-flash-latest",
+                model_name="gemma-4-31b-it",
                 system_instruction=system_prompt,
             )
             response = model.generate_content(prompt)
@@ -188,6 +285,12 @@ def make_backend(name: str) -> AIBackend:
         return GeminiBackend()
     if name == "openrouter":
         return OpenRouterBackend()
+    if name == "claude":
+        return ClaudeBackend()
+    if name == "chatgpt":
+        return ChatGPTBackend()
+    if name == "qwen":
+        return QwenBackend()
     return LMStudioBackend()
 
 
@@ -566,7 +669,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enrich candidates with AI-generated summaries.")
     parser.add_argument(
         "--backend",
-        choices=["lmstudio", "gemini", "openrouter"],
+        choices=["lmstudio", "gemini", "openrouter", "claude", "chatgpt", "qwen"],
         default="lmstudio",
         help="AI backend to use (default: lmstudio)",
     )
