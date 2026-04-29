@@ -270,7 +270,17 @@ def fetch_page(url: str) -> tuple[Optional[str], Optional[str]]:
                     page.wait_for_load_state("networkidle", timeout=8000)
                 except Exception:
                     pass
-                return page.content(), None
+                # If we hit a bot-check interstitial, wait for it to resolve
+                content = page.content()
+                if "checking your browser" in content.lower() or "just a moment" in content.lower():
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=12000)
+                    except Exception:
+                        pass
+                    import time as _time
+                    _time.sleep(3)
+                    content = page.content()
+                return content, None
             finally:
                 browser.close()
     except Exception as exc:
@@ -311,6 +321,7 @@ def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
     pages_scraped = 0
     probed = False
     probe_urls: set[str] = set()
+    _prefetched_html: dict[str, str] = {}  # reuse first fetch to avoid double-hitting the URL
 
     while queue and pages_scraped < MAX_PAGES_PER_SITE:
         url = queue.pop(0)
@@ -319,7 +330,29 @@ def crawl_domain(start_url: str) -> tuple[Optional[str], str, int]:
         visited.add(url)
 
         is_probe = url in probe_urls
-        html, err = fetch_page(url) if not is_probe else _fetch_requests_only(url)
+        if url in _prefetched_html:
+            html, err = _prefetched_html.pop(url), None
+        else:
+            html, err = fetch_page(url) if not is_probe else _fetch_requests_only(url)
+
+        # Follow <frameset> redirects — some old campaign sites load all content
+        # into a <frame src="..."> pointing at another domain.
+        if html and url == (start_url.rstrip("/") or base_origin):
+            try:
+                frame_soup = BeautifulSoup(html, "lxml")
+                # Only follow <frame> inside <frameset> — not generic <iframe> (ads/analytics)
+                frameset = frame_soup.find("frameset")
+                frame = frameset.find("frame", src=True) if frameset else None
+                if frame and str(frame["src"]).startswith("http"):
+                    frame_url = frame["src"]
+                    frame_html, _ = fetch_page(frame_url)
+                    if frame_html:
+                        html = frame_html
+                        _prefetched_html[frame_url] = frame_html
+                        parsed_base = urlparse(frame_url)
+                        base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
+            except Exception:
+                pass
         if not html:
             continue
 

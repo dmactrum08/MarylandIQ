@@ -186,7 +186,6 @@ export default function AboutPage() {
                 "Generate candidate positions not grounded in something they actually said or published.",
                 "Display content in comparison tables that isn't directly linked to evidence.",
                 "Endorse, rank, or editorialize about any candidate.",
-                "Sell or share user data with third parties for commercial purposes.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <svg

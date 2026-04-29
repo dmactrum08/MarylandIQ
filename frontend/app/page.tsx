@@ -69,7 +69,7 @@ export default function Home() {
                 <svg className="w-3.5 h-3.5 text-[#F5A623] shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fillRule="evenodd" d="M10 1a.75.75 0 01.671.415l2.293 4.644 5.122.744a.75.75 0 01.416 1.279l-3.708 3.613.876 5.102a.75.75 0 01-1.088.791L10 15.347l-4.583 2.41a.75.75 0 01-1.088-.791l.875-5.102L1.498 8.082a.75.75 0 01.416-1.279l5.122-.744L9.33 1.415A.75.75 0 0110 1z" clipRule="evenodd" />
                 </svg>
-                Sourced from the Maryland State Board of Elections · Every field labeled
+                Sourced from the Maryland State Board of Elections
               </p>
             </div>
 

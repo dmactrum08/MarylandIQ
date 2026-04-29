@@ -294,6 +294,7 @@ def fetch_candidate_page() -> BeautifulSoup:
         headers={"User-Agent": "MarylandIQ/1.0 (voter information platform)"},
     )
     response.raise_for_status()
+    response.encoding = "utf-8"
     return BeautifulSoup(response.text, "html.parser")
 
 

@@ -46,6 +46,132 @@
   },
   "incumbents": [
     {
+      "full_name": "Russ English, Jr.",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District B"
+    },
+    {
+      "full_name": "Ron Fithian",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "kent-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Rod McMillion",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Rodney B. Glotfelty",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Robert Julian Ivey",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 47A"
+    },
+    {
+      "full_name": "Robert Edwin Kramer, Jr.",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Ricky C. Travers",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 3"
+    },
+    {
+      "full_name": "Rae Gallagher",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "frederick-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Lynn L. Mielke",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Pete Lesher",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "talbot-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Paul C. Edwards",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Michael \"Mike\" P. Ertel",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 6"
+    },
+    {
+      "full_name": "Michael \"Mike\" Lukas",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "charles-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Melissa Hahn",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "harford-county",
+      "district_name": "District D"
+    },
+    {
+      "full_name": "Mark C. Cox, Sr.",
+      "office_slug": "county-commissioner",
+      "jurisdiction_slug": "calvert-county",
+      "district_name": "District 2"
+    },
+    {
+      "full_name": "Linda Murray",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
+      "full_name": "Lenny Pfeffer",
+      "office_slug": "county-council-member",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Linda Alderman Widmyer",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "allegany-county",
+      "district_name": null
+    },
+    {
+      "full_name": "LaToya Marie Caldwell-Nkongolo",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 31"
+    },
+    {
+      "full_name": "Ken Kerr",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 3"
+    },
+    {
+      "full_name": "Julie C. Henn",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "baltimore-county",
+      "district_name": "District 5"
+    },
+    {
       "full_name": "Dottery A. Butler-Washington",
       "office_slug": "board-of-education",
       "jurisdiction_slug": "charles-county",
@@ -298,12 +424,6 @@
       "district_name": "District 5"
     },
     {
-      "full_name": "Mike Ertel",
-      "office_slug": "county-council-member",
-      "jurisdiction_slug": "baltimore-county",
-      "district_name": "District 6"
-    },
-    {
       "full_name": "Todd Crandell",
       "office_slug": "county-council-member",
       "jurisdiction_slug": "baltimore-county",
@@ -338,12 +458,6 @@
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "calvert-county",
       "district_name": "District 1"
-    },
-    {
-      "full_name": "Mark Cox",
-      "office_slug": "county-commissioner",
-      "jurisdiction_slug": "calvert-county",
-      "district_name": "District 2"
     },
     {
       "full_name": "Catherine Grasso",
@@ -520,22 +634,10 @@
       "district_name": null
     },
     {
-      "full_name": "Rob Kramer",
-      "office_slug": "county-council-member",
-      "jurisdiction_slug": "dorchester-county",
-      "district_name": "District 1"
-    },
-    {
       "full_name": "William V. Nichols",
       "office_slug": "county-council-member",
       "jurisdiction_slug": "dorchester-county",
       "district_name": "District 2"
-    },
-    {
-      "full_name": "Richard C. Travers",
-      "office_slug": "county-council-member",
-      "jurisdiction_slug": "dorchester-county",
-      "district_name": "District 3"
     },
     {
       "full_name": "George Pfeffer",
@@ -619,12 +721,6 @@
       "full_name": "Chuck Jenkins",
       "office_slug": "sheriff",
       "jurisdiction_slug": "frederick-county",
-      "district_name": null
-    },
-    {
-      "full_name": "Paul C. Edwards",
-      "office_slug": "county-commissioner",
-      "jurisdiction_slug": "garrett-county",
       "district_name": null
     },
     {
@@ -749,12 +845,6 @@
     },
     {
       "full_name": "Albert Nickerson",
-      "office_slug": "county-commissioner",
-      "jurisdiction_slug": "kent-county",
-      "district_name": null
-    },
-    {
-      "full_name": "Ronald H. Fithian",
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "kent-county",
       "district_name": null
@@ -1048,20 +1138,14 @@
       "district_name": null
     },
     {
-      "full_name": "Pete Lesher",
-      "office_slug": "county-council-at-large",
-      "jurisdiction_slug": "talbot-county",
-      "district_name": null
-    },
-    {
       "full_name": "Dave Stepp",
       "office_slug": "county-council-at-large",
       "jurisdiction_slug": "talbot-county",
       "district_name": null
     },
     {
-      "full_name": "Lynn Mielke",
-      "office_slug": "county-council-at-large",
+      "full_name": "Dave Stepp",
+      "office_slug": "county-council-member",
       "jurisdiction_slug": "talbot-county",
       "district_name": null
     },

@@ -258,16 +258,16 @@ class GeminiBackend:
             sys.exit(1)
         genai.configure(api_key=api_key)
         self._model = genai.GenerativeModel(
-            model_name="gemini-flash-latest",
+            model_name="gemma-4-31b-it",
             system_instruction=SYSTEM_PROMPT,
         )
-        log.info("Backend: Gemini  model=gemini-flash-latest")
+        log.info("Backend: Gemini  model=gemma-4-31b-it")
 
     def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         if system_prompt and system_prompt != SYSTEM_PROMPT:
             import google.generativeai as genai
             model = genai.GenerativeModel(
-                model_name="gemini-flash-latest",
+                model_name="gemma-4-31b-it",
                 system_instruction=system_prompt,
             )
             response = model.generate_content(prompt)
@@ -322,9 +322,9 @@ def _truncate(text: str, max_chars: int) -> str:
     return text[:max_chars] + "\n[...truncated]"
 
 
-MAX_WEBSITE_CHARS = 12000
-MAX_SOCIAL_CHARS = 3000
-MAX_NEWS_CHARS = 8000
+MAX_WEBSITE_CHARS = 30000
+MAX_SOCIAL_CHARS = 30000
+MAX_NEWS_CHARS = 12000
 
 
 def build_user_prompt(target: EnrichmentTarget) -> str:
