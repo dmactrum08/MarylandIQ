@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Amount must be between $1 and $1,000" }, { status: 400 });
   }
 
-  const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "https://marylandiq.org";
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://marylandiq.org";
 
   let session: Awaited<ReturnType<typeof stripe.checkout.sessions.create>>;
   try {
