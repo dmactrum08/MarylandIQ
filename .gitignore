@@ -29,6 +29,10 @@ env/
 # Finance CSV downloads (large SBE data files — download fresh as needed)
 docs/Finance/
 
+# Claude Code project config (local only)
+CLAUDE.md
+AGENTS.md
+
 # IDEs and editors
 .idea/
 .vscode/
