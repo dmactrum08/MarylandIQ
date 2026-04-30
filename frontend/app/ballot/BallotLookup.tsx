@@ -171,6 +171,27 @@ function BallotResults({
         })
       )}
 
+      {/* Official sample ballot link */}
+      <a
+        href="https://voterservices.elections.maryland.gov/VoterSearch"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between w-full px-4 py-3 border border-gray-200 rounded-xl hover:border-[#CC0000] hover:bg-[#FFF5F5] transition-all duration-150 group focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:ring-offset-2"
+      >
+        <div className="flex items-center gap-3">
+          <svg className="w-4 h-4 text-[#CC0000] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-[#0F172A] group-hover:text-[#CC0000] transition-colors">View your official sample ballot</p>
+            <p className="text-xs text-[#94a3b8]">Maryland State Board of Elections</p>
+          </div>
+        </div>
+        <svg className="w-4 h-4 text-[#94a3b8] group-hover:text-[#CC0000] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+        </svg>
+      </a>
+
       {/* Trust note */}
       <p className="text-xs text-[#94a3b8] leading-relaxed border-t border-gray-100 pt-4">
         Ballot data is sourced from the Maryland State Board of Elections and updated regularly.
@@ -211,8 +232,10 @@ export default function BallotLookup() {
         setStatus("error");
         setErrorMessage(data.error ?? "Something went wrong.");
       } else {
-        setResult(data as BallotLookupResponse);
+        const ballotData = data as BallotLookupResponse;
+        setResult(ballotData);
         setStatus("success");
+        window.history.replaceState(null, "", `/ballot?address=${encodeURIComponent(display)}`);
         setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
       }
     } catch {
@@ -247,9 +270,10 @@ export default function BallotLookup() {
         setStatus("error");
         setErrorMessage(data.error ?? "Something went wrong. Please try again.");
       } else {
-        setResult(data as BallotLookupResponse);
+        const ballotData = data as BallotLookupResponse;
+        setResult(ballotData);
         setStatus("success");
-        // Scroll to results on mobile
+        window.history.replaceState(null, "", `/ballot?address=${encodeURIComponent(addressToLookup.trim())}`);
         setTimeout(() => {
           resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 100);
@@ -260,9 +284,10 @@ export default function BallotLookup() {
     }
   }, []);
 
-  // Auto-trigger from ?address= query param (e.g. submitted from homepage card)
+  // On mount: restore address from URL (works after back-navigation)
   useEffect(() => {
-    const prefill = searchParams.get("address");
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get("address") || searchParams.get("address");
     if (prefill && prefill.trim()) {
       setAddress(prefill.trim());
       lookup(prefill.trim());
@@ -321,6 +346,7 @@ export default function BallotLookup() {
     setErrorMessage("");
     setAddress("");
     setSubmittedAddress("");
+    window.history.replaceState(null, "", "/ballot");
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
