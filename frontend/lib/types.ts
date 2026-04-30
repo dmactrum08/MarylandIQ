@@ -14,6 +14,7 @@ export interface Jurisdiction {
   type: JurisdictionType;
   sbe_jurisdiction_id: string | null;
   county_board_url: string | null;
+  legislative_portal_url: string | null;
 }
 
 // ── Offices ──────────────────────────────────────────────────────────────────
