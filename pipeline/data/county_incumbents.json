@@ -196,6 +196,12 @@
       "district_name": null
     },
     {
+      "full_name": "Mike Guessford",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "washington-county",
+      "district_name": null
+    },
+    {
       "full_name": "Bill Atkinson",
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "allegany-county",
@@ -454,7 +460,7 @@
       "district_name": null
     },
     {
-      "full_name": "Michael Hart",
+      "full_name": "Mike Hart",
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "calvert-county",
       "district_name": "District 1"
@@ -733,7 +739,37 @@
       "full_name": "S. Larry Tichnell",
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "garrett-county",
-      "district_name": null
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Sadie M. Liller",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "garrett-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Shannon Long Bent",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "queen-annes-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Sheri R. Hubbard",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 4"
+    },
+    {
+      "full_name": "Todd A. Ferrante",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "worcester-county",
+      "district_name": "District 7"
+    },
+    {
+      "full_name": "Talibah Chikwendu",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "dorchester-county",
+      "district_name": "District 2"
     },
     {
       "full_name": "Christian Mash",
@@ -1270,7 +1306,7 @@
       "district_name": "District 3"
     },
     {
-      "full_name": "Ted Elder",
+      "full_name": "Theodore \"Ted\" J. Elder",
       "office_slug": "county-commissioner",
       "jurisdiction_slug": "worcester-county",
       "district_name": "District 4"
@@ -1306,7 +1342,7 @@
       "district_name": null
     },
     {
-      "full_name": "Timothy J. Adams",
+      "full_name": "Tim Adams",
       "office_slug": "county-council-member",
       "jurisdiction_slug": "prince-georges-county",
       "district_name": "District 4"
@@ -1504,7 +1540,7 @@
       "district_name": null
     },
     {
-      "full_name": "Susan R. Braniecki",
+      "full_name": "Susan Richardson Braniecki",
       "office_slug": "clerk-of-circuit-court",
       "jurisdiction_slug": "worcester-county",
       "district_name": null
@@ -1648,7 +1684,7 @@
       "district_name": null
     },
     {
-      "full_name": "Terri Westcott",
+      "full_name": "Terri Delaney Westcott",
       "office_slug": "register-of-wills",
       "jurisdiction_slug": "worcester-county",
       "district_name": null
@@ -1678,6 +1714,12 @@
       "district_name": "Legislative District 4"
     },
     {
+      "full_name": "S. I. \"Sandy\" Rosenberg",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 41"
+    },
+    {
       "full_name": "Cathi Forbes",
       "office_slug": "house-of-delegates-member",
       "jurisdiction_slug": "maryland-statewide",
@@ -1690,9 +1732,21 @@
       "district_name": "Legislative District 13"
     },
     {
+      "full_name": "Teresa Saavedra Woorman",
+      "office_slug": "house-of-delegates-member",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 16"
+    },
+    {
       "full_name": "Grace Rivera-Oven",
       "office_slug": "board-of-education",
       "jurisdiction_slug": "montgomery-county",
+      "district_name": "District 1"
+    },
+    {
+      "full_name": "Samichie K. Thomas",
+      "office_slug": "board-of-education",
+      "jurisdiction_slug": "charles-county",
       "district_name": "District 1"
     },
     {
@@ -1712,6 +1766,12 @@
       "office_slug": "state-senator",
       "jurisdiction_slug": "maryland-statewide",
       "district_name": "Legislative District 19"
+    },
+    {
+      "full_name": "Steve Hershey",
+      "office_slug": "state-senator",
+      "jurisdiction_slug": "maryland-statewide",
+      "district_name": "Legislative District 36"
     },
     {
       "full_name": "Bob Long",
