@@ -58,6 +58,19 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
 
+        {/* Google Ads conversion tracking */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18128744001"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'AW-18128744001');
+        `}</Script>
+
         <Header />
 
         <div id="main-content" className="flex flex-col flex-1">
