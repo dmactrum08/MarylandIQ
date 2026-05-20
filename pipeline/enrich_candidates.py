@@ -159,7 +159,7 @@ class OpenRouterBackend:
         time.sleep(1)  # light throttle; adjust if hitting rate limits
 
 
-class ClaudeBackend:
+class AnthropicBackend:
     def __init__(self) -> None:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
@@ -168,7 +168,7 @@ class ClaudeBackend:
         model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
         self._model = model
         self._api_key = api_key
-        log.info(f"Backend: Claude  model={model}")
+        log.info(f"Backend: Anthropic  model={model}")
 
     def call(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         import anthropic
@@ -285,8 +285,8 @@ def make_backend(name: str) -> AIBackend:
         return GeminiBackend()
     if name == "openrouter":
         return OpenRouterBackend()
-    if name == "claude":
-        return ClaudeBackend()
+    if name == "anthropic":
+        return AnthropicBackend()
     if name == "chatgpt":
         return ChatGPTBackend()
     if name == "qwen":
@@ -669,7 +669,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enrich candidates with AI-generated summaries.")
     parser.add_argument(
         "--backend",
-        choices=["lmstudio", "gemini", "openrouter", "claude", "chatgpt", "qwen"],
+        choices=["lmstudio", "gemini", "openrouter", "anthropic", "chatgpt", "qwen"],
         default="lmstudio",
         help="AI backend to use (default: lmstudio)",
     )
